@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:math';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -37,6 +38,8 @@ class PixelBottomNav extends StatelessWidget {
 
   static const double _barHeight = 56;
 
+  static const double _minBottomInset = 24;
+
   @override
   Widget build(BuildContext context) {
     final half = items.length ~/ 2;
@@ -50,18 +53,14 @@ class PixelBottomNav extends StatelessWidget {
     );
 
     final safe = MediaQuery.paddingOf(context);
+    final inset = max(safe.bottom, _minBottomInset);
 
     return Container(
       color: AppColors.background,
       foregroundDecoration: const BoxDecoration(
         border: Border(top: BorderSide(color: AppColors.border, width: 1.5)),
       ),
-      padding: EdgeInsets.fromLTRB(
-        safe.left,
-        safe.bottom / 2,
-        safe.right,
-        safe.bottom / 2,
-      ),
+      padding: EdgeInsets.fromLTRB(safe.left, inset / 2, safe.right, inset / 2),
       child: SizedBox(
         height: _barHeight,
         child: Row(
