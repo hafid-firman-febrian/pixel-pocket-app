@@ -89,4 +89,10 @@ class AppSpacing {
   static const double section = s16;
 
   static const double item = s12;
+
+  /// Bottom padding for a tab's scrollable so its last item can scroll clear
+  /// of the floating navbar. Inside the app shell, MediaQuery's bottom padding
+  /// already includes the navbar's full height (`Scaffold.extendBody`).
+  static double bottomInset(BuildContext context) =>
+      MediaQuery.paddingOf(context).bottom + s16;
 }

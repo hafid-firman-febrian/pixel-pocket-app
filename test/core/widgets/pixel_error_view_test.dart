@@ -59,5 +59,34 @@ void main() {
       await tester.tap(find.text('TRY AGAIN'));
       expect(tapped, 1);
     });
+
+    testWidgets('fill centers the content above the bottom padding',
+        (tester) async {
+      Future<double> messageY(double bottomPadding) async {
+        await tester.pumpWidget(
+          MaterialApp(
+            builder: (context, child) => MediaQuery(
+              data: MediaQuery.of(context).copyWith(
+                padding: EdgeInsets.only(bottom: bottomPadding),
+              ),
+              child: child!,
+            ),
+            home: Material(
+              child: PixelErrorView(
+                failure: const Failure(message: 'boom'),
+                onRetry: () {},
+                fill: true,
+              ),
+            ),
+          ),
+        );
+        return tester.getCenter(find.text('boom')).dy;
+      }
+
+      final plain = await messageY(0);
+      final underNav = await messageY(100);
+      // Centered in the 100px-shorter visible area → moves up by half of it.
+      expect(plain - underNav, closeTo(50, 0.5));
+    });
   });
 }
