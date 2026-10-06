@@ -25,6 +25,10 @@ class PixelBottomSheetFrame extends StatelessWidget {
     final size = MediaQuery.sizeOf(context);
     // Lift the sheet above the on-screen keyboard when a field is focused.
     final keyboard = MediaQuery.viewInsetsOf(context).bottom;
+    // ...and above whatever owns the bottom edge: the home indicator, or —
+    // for sheets opened inside a tab — the floating navbar, whose height the
+    // app shell hands down as bottom padding.
+    final bottomInset = MediaQuery.paddingOf(context).bottom;
 
     return Align(
       alignment: Alignment.bottomCenter,
@@ -33,7 +37,7 @@ class PixelBottomSheetFrame extends StatelessWidget {
           AppSpacing.s16,
           0,
           AppSpacing.s16,
-          AppSpacing.s16 + keyboard,
+          AppSpacing.s16 + keyboard + bottomInset,
         ),
         child: ConstrainedBox(
           constraints: BoxConstraints(maxHeight: size.height * 0.85),
