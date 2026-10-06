@@ -5,6 +5,8 @@ import 'package:go_router/go_router.dart';
 import 'package:pixel_pocket/core/router/app_router.dart';
 import 'package:pixel_pocket/features/auth/presentation/controllers/auth_controller.dart';
 import 'package:pixel_pocket/features/auth/presentation/controllers/pin_controller.dart';
+import 'package:pixel_pocket/features/auth/presentation/screens/set_pin_screen.dart';
+import 'package:pixel_pocket/features/auth/presentation/screens/unlock_pin_screen.dart';
 import 'package:pixel_pocket/features/auth/presentation/states/auth_state.dart';
 import 'package:pixel_pocket/main.dart';
 
@@ -37,7 +39,7 @@ void main() {
 
     await tester.pumpAndSettle();
 
-    expect(find.text('Create PIN'), findsOneWidget);
+    expect(find.byType(SetPinScreen), findsOneWidget);
   });
 
   testWidgets('Shows unlock screen when auth is locked', (tester) async {
@@ -53,7 +55,7 @@ void main() {
 
     await tester.pumpAndSettle();
 
-    expect(find.text('Enter PIN'), findsOneWidget);
+    expect(find.byType(UnlockPinScreen), findsOneWidget);
   });
 
   testWidgets(
@@ -72,7 +74,7 @@ void main() {
       await tester.pumpAndSettle();
 
       // Navigate straight to /reset-pin while still locked.
-      final router = GoRouter.of(tester.element(find.text('Enter PIN')));
+      final router = GoRouter.of(tester.element(find.byType(UnlockPinScreen)));
       router.go(AppRoutes.resetPin);
       await tester.pumpAndSettle();
       expect(find.text('Forgot PIN?'), findsOneWidget);
@@ -83,7 +85,7 @@ void main() {
       final forgotPinContext = tester.element(find.text('Forgot PIN?'));
       GoRouter.of(forgotPinContext).go(AppRoutes.settings);
       await tester.pumpAndSettle();
-      expect(find.text('Enter PIN'), findsOneWidget);
+      expect(find.byType(UnlockPinScreen), findsOneWidget);
     },
   );
 }

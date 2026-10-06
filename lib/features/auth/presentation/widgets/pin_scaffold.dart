@@ -4,30 +4,32 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:pixel_pocket/core/theme/app_color.dart';
 import 'package:pixel_pocket/core/theme/app_spacing.dart';
-import 'package:pixel_pocket/features/auth/presentation/widgets/pin_dots.dart';
+import 'package:pixel_pocket/features/auth/presentation/widgets/pin_prompt.dart';
 import 'package:pixel_pocket/features/auth/presentation/widgets/pixel_pin_pad.dart';
-import 'package:pixelarticons/pixel.dart';
+
+class PinLine {
+  const PinLine(this.text) : error = false;
+
+  const PinLine.error(this.text) : error = true;
+
+  final String text;
+  final bool error;
+}
 
 class PinScaffold extends StatefulWidget {
   const PinScaffold({
     super.key,
-    required this.title,
+    required this.lines,
     required this.length,
     required this.filled,
     required this.onDigit,
     required this.onBackspace,
-    this.subtitle,
-    this.icon = Pixel.lock,
     this.error = false,
-    this.onBack,
     this.keypadEnabled = true,
-    this.subtitleError = false,
     this.footer,
   });
 
-  final String title;
-  final String? subtitle;
-  final IconData icon;
+  final List<PinLine> lines;
   final int length;
   final int filled;
 
@@ -36,11 +38,7 @@ class PinScaffold extends StatefulWidget {
   final ValueChanged<String> onDigit;
   final VoidCallback onBackspace;
 
-  final VoidCallback? onBack;
-
   final bool keypadEnabled;
-
-  final bool subtitleError;
 
   final Widget? footer;
 
@@ -74,78 +72,139 @@ class _PinScaffoldState extends State<PinScaffold>
 
   @override
   Widget build(BuildContext context) {
+    final lineStyle = Theme.of(context).textTheme.bodyMedium?.copyWith(
+      fontSize: 13,
+      height: 1.7,
+      color: AppColors.textSecondary,
+    );
     return Scaffold(
-      appBar: widget.onBack == null
-          ? null
-          : AppBar(
-              leading: IconButton(
-                icon: const Icon(Pixel.arrowleft),
-                onPressed: widget.onBack,
+      body: Stack(
+        children: [
+          SafeArea(
+            child: Padding(
+              padding: AppSpacing.screenAll,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  SizedBox(height: AppSpacing.s24),
+                  Text(
+                    'PIXEL_POCKET',
+                    style: lineStyle?.copyWith(color: AppColors.textMuted),
+                  ),
+                  SizedBox(height: AppSpacing.s4),
+                  Container(height: 1, color: AppColors.border),
+                  SizedBox(height: AppSpacing.s8),
+                  for (final line in widget.lines) _line(line, lineStyle),
+                  SizedBox(height: AppSpacing.s16),
+                  AnimatedBuilder(
+                    animation: _shake,
+                    builder: (context, child) => Transform.translate(
+                      offset: Offset(_shakeOffset(_shake.value), 0),
+                      child: child,
+                    ),
+                    child: PinPrompt(
+                      length: widget.length,
+                      filled: widget.filled,
+                      error: widget.error,
+                      enabled: widget.keypadEnabled,
+                    ),
+                  ),
+                  if (widget.footer != null) ...[
+                    SizedBox(height: AppSpacing.s16),
+                    widget.footer!,
+                  ],
+                  const Spacer(),
+                  AnimatedOpacity(
+                    opacity: widget.keypadEnabled ? 1 : 0.35,
+                    duration: const Duration(milliseconds: 200),
+                    child: PixelPinPad(
+                      onDigit: widget.onDigit,
+                      onBackspace: widget.onBackspace,
+                      enabled: widget.keypadEnabled,
+                    ),
+                  ),
+                  SizedBox(height: AppSpacing.s16),
+                ],
               ),
             ),
-      body: SafeArea(
+          ),
+          const Positioned.fill(
+            child: IgnorePointer(
+              child: RepaintBoundary(
+                child: CustomPaint(painter: _ScanlinePainter()),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _line(PinLine line, TextStyle? style) {
+    if (line.error) {
+      return Text(
+        '> ${line.text}',
+        style: style?.copyWith(
+          color: AppColors.expense,
+          fontWeight: FontWeight.w700,
+        ),
+      );
+    }
+    return Text.rich(
+      TextSpan(
+        children: [
+          const TextSpan(
+            text: '> ',
+            style: TextStyle(color: AppColors.primary),
+          ),
+          TextSpan(text: line.text),
+        ],
+      ),
+      style: style,
+    );
+  }
+}
+
+class PinLink extends StatelessWidget {
+  const PinLink({super.key, required this.label, required this.onTap});
+
+  final String label;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Align(
+      alignment: Alignment.centerLeft,
+      child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTap: onTap,
         child: Padding(
-          padding: AppSpacing.screenAll,
-          child: Column(
-            children: [
-              const Spacer(),
-              Icon(widget.icon, size: 56, color: AppColors.primary),
-              SizedBox(height: AppSpacing.s24),
-              Text(
-                widget.title,
-                textAlign: TextAlign.center,
-                style: const TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.w800,
-                ),
-              ),
-              if (widget.subtitle != null) ...[
-                SizedBox(height: AppSpacing.s8),
-                Text(
-                  widget.subtitle!,
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    color: widget.subtitleError
-                        ? AppColors.expense
-                        : AppColors.textMuted,
-                    fontWeight: widget.subtitleError
-                        ? FontWeight.w700
-                        : FontWeight.normal,
-                  ),
-                ),
-              ],
-              SizedBox(height: AppSpacing.s32),
-              AnimatedBuilder(
-                animation: _shake,
-                builder: (context, child) => Transform.translate(
-                  offset: Offset(_shakeOffset(_shake.value), 0),
-                  child: child,
-                ),
-                child: PinDots(
-                  length: widget.length,
-                  filled: widget.filled,
-                  error: widget.error,
-                ),
-              ),
-              const Spacer(),
-              AnimatedOpacity(
-                opacity: widget.keypadEnabled ? 1 : 0.4,
-                duration: const Duration(milliseconds: 200),
-                child: PixelPinPad(
-                  onDigit: widget.onDigit,
-                  onBackspace: widget.onBackspace,
-                  enabled: widget.keypadEnabled,
-                ),
-              ),
-              if (widget.footer != null) ...[
-                SizedBox(height: AppSpacing.s16),
-                widget.footer!,
-              ],
-              SizedBox(height: AppSpacing.s16),
-            ],
+          padding: const EdgeInsets.symmetric(vertical: AppSpacing.s10),
+          child: Text(
+            '> [ $label ]',
+            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+              fontSize: 13,
+              fontWeight: FontWeight.w700,
+              color: AppColors.primary,
+            ),
           ),
         ),
       ),
     );
   }
+}
+
+class _ScanlinePainter extends CustomPainter {
+  const _ScanlinePainter();
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()..color = const Color(0x38000000);
+    for (var y = 0.0; y < size.height; y += 3) {
+      canvas.drawRect(Rect.fromLTWH(0, y, size.width, 1), paint);
+    }
+  }
+
+  @override
+  bool shouldRepaint(_ScanlinePainter oldDelegate) => false;
 }

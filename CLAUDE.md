@@ -66,7 +66,7 @@ Empat penyimpangan berikut **disengaja** — jangan "dirapikan" tanpa alasan kua
 - **`backup` tanpa `domain/`.** `backup_serialization.dart` men-serialize row class Drift secara langsung, karena backup adalah snapshot database, bukan entity bisnis. Alasan yang sama membuatnya berada di root `data/`, bukan di `datasources/`.
 - **`backup/application/auto_backup_coordinator.dart`** di root `application/`, bukan `services/` — dia scheduler (debounce timer + dirty flag), bukan business service.
 - **`settings` presentation-only.** `settings_screen.dart` adalah permukaan komposisi: merender widget dan controller milik `auth`, `backup`, `categories`, dan `salary_period`, tanpa state sendiri.
-- **`auth` menaruh widget di `presentation/widgets/`** (sejajar `screens/`), karena `PinScaffold`, `PinDots`, dan `PixelPinPad` dipakai bersama oleh Set PIN dan Unlock screen.
+- **`auth` menaruh widget di `presentation/widgets/`** (sejajar `screens/`), karena `PinScaffold`, `PinPrompt`, dan `PixelPinPad` dipakai bersama oleh Set PIN dan Unlock screen.
 
 ---
 
