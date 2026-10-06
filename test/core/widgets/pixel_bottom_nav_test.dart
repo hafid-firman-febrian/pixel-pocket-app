@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:pixel_pocket/core/theme/app_color.dart';
-import 'package:pixel_pocket/core/theme/app_spacing.dart';
 import 'package:pixel_pocket/core/widgets/pixel_bottom_nav.dart';
 import 'package:pixel_pocket/core/widgets/pixel_button.dart';
 import 'package:pixelarticons/pixel.dart';
@@ -28,7 +28,6 @@ Widget _host({
       child: child!,
     ),
     home: Scaffold(
-      extendBody: true,
       body: body,
       bottomNavigationBar: PixelBottomNav(
         items: _items,
@@ -186,43 +185,26 @@ void main() {
       expect(snack.bottom, lessThanOrEqualTo(nav.top));
     });
 
-    testWidgets(
-        'with extendBody, a tab using SafeArea(bottom: false) gets the full '
-        'bar height as bottomInset', (tester) async {
-      late double inset;
-      await tester.pumpWidget(
-        _host(
-          body: SafeArea(
-            bottom: false,
-            child: Builder(
-              builder: (context) {
-                inset = AppSpacing.bottomInset(context);
-                return const SizedBox.expand();
-              },
-            ),
-          ),
-        ),
+    testWidgets('the bar is docked to the bottom edge', (tester) async {
+      await tester.pumpWidget(_host());
+      final screen = tester.view.physicalSize / tester.view.devicePixelRatio;
+      // The bottom-left corner belongs to the bar itself, not to a margin.
+      final result = HitTestResult();
+      tester.binding.hitTestInView(
+        result,
+        Offset(1, screen.height - 1),
+        tester.view.viewId,
       );
-      final barHeight = tester.getSize(find.byType(PixelBottomNav)).height;
-      expect(inset, barHeight + AppSpacing.s16);
+      final bar = tester.renderObject(find.byType(PixelBottomNav));
+      expect(result.path.any((entry) => entry.target == bar), isTrue);
     });
 
-    testWidgets('a plain SafeArea would swallow the bar height', (tester) async {
-      late double inset;
-      await tester.pumpWidget(
-        _host(
-          body: SafeArea(
-            child: Builder(
-              builder: (context) {
-                inset = AppSpacing.bottomInset(context);
-                return const SizedBox.expand();
-              },
-            ),
-          ),
-        ),
-      );
-      // This is why every tab screen must use SafeArea(bottom: false).
-      expect(inset, AppSpacing.s16);
+    testWidgets('icons sit level with the centre of the + button',
+        (tester) async {
+      await tester.pumpWidget(_host());
+      final icon = tester.getCenter(find.byIcon(Pixel.home)).dy;
+      final add = tester.getCenter(find.byType(PixelButton)).dy;
+      expect(icon, closeTo(add, 0.5));
     });
   });
 }

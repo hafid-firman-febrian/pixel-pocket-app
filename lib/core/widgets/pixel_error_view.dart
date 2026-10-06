@@ -87,8 +87,8 @@ class PixelErrorView extends StatelessWidget {
 
     if (!fill) return content;
 
-    // Inside the app shell the bottom padding includes the floating navbar;
-    // keep the error centered in the part of the screen that stays visible.
+    // Keep the error centered in the part of the screen left above any bottom
+    // padding (e.g. a home indicator).
     final bottom = MediaQuery.paddingOf(context).bottom;
     return LayoutBuilder(
       builder: (context, constraints) => SingleChildScrollView(

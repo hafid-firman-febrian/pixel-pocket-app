@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:ui' show ImageFilter;
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -24,8 +23,8 @@ class PixelNavItem {
 }
 
 // ─────────────────────────────────────────────
-// Floating bottom nav — icon-only tabs, a blinking terminal cursor under the
-// active one, and the add-transaction button in the middle.
+// Bottom nav docked to the screen edge — icon-only tabs, a blinking terminal
+// cursor under the active one, and the add-transaction button in the middle.
 // ─────────────────────────────────────────────
 class PixelBottomNav extends StatelessWidget {
   const PixelBottomNav({
@@ -58,42 +57,31 @@ class PixelBottomNav extends StatelessWidget {
       ),
     );
 
-    return Padding(
-      padding: EdgeInsets.fromLTRB(
-        AppSpacing.s14,
-        0,
-        AppSpacing.s14,
-        AppSpacing.s12 + MediaQuery.paddingOf(context).bottom,
+    return Container(
+      decoration: const BoxDecoration(
+        color: AppColors.background,
+        border: Border(top: BorderSide(color: AppColors.border, width: 1.5)),
       ),
-      // Blur only what sits behind the bar itself, not the whole screen.
-      child: ClipRect(
-        child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
-          child: Container(
-            height: _barHeight,
-            decoration: BoxDecoration(
-              color: AppColors.surface.withValues(alpha: 0.85),
-              border: Border.all(color: AppColors.border),
-            ),
-            child: Row(
-              children: [
-                for (var i = 0; i < half; i++) tab(i),
-                Padding(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: AppSpacing.s8,
-                  ),
-                  child: Semantics(
-                    container: true,
-                    label: 'Add transaction',
-                    button: true,
-                    excludeSemantics: true,
-                    onTap: onAdd,
-                    child: PixelButton(icon: Pixel.plus, onPressed: onAdd),
-                  ),
+      child: SafeArea(
+        top: false,
+        child: SizedBox(
+          height: _barHeight,
+          child: Row(
+            children: [
+              for (var i = 0; i < half; i++) tab(i),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: AppSpacing.s8),
+                child: Semantics(
+                  container: true,
+                  label: 'Add transaction',
+                  button: true,
+                  excludeSemantics: true,
+                  onTap: onAdd,
+                  child: PixelButton(icon: Pixel.plus, onPressed: onAdd),
                 ),
-                for (var i = half; i < items.length; i++) tab(i),
-              ],
-            ),
+              ),
+              for (var i = half; i < items.length; i++) tab(i),
+            ],
           ),
         ),
       ),
@@ -120,6 +108,9 @@ class _PixelNavTab extends StatefulWidget {
 }
 
 class _PixelNavTabState extends State<_PixelNavTab> {
+  static const double _cursorGap = AppSpacing.s4;
+  static const double _cursorSlot = 12;
+
   bool _pressed = false;
 
   @override
@@ -152,12 +143,15 @@ class _PixelNavTabState extends State<_PixelNavTab> {
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
+                // Mirrors the cursor slot below, so the icon itself sits at
+                // the bar's vertical centre (level with the + button).
+                const SizedBox(height: _cursorGap + _cursorSlot),
                 Icon(widget.item.icon, size: 20, color: color),
-                const SizedBox(height: AppSpacing.s4),
+                const SizedBox(height: _cursorGap),
                 // Reserved on every tab so icons don't shift when the active
                 // tab changes.
                 SizedBox(
-                  height: 12,
+                  height: _cursorSlot,
                   child: widget.isActive ? const _BlinkingCursor() : null,
                 ),
               ],
@@ -174,8 +168,8 @@ class _PixelNavTabState extends State<_PixelNavTab> {
 // ─────────────────────────────────────────────
 
 /// Blinks with a stepped on/off [Timer] (≈2 redraws per second) instead of an
-/// AnimationController, which would redraw — and re-run the bar's blur —
-/// every frame. Stays solid when the OS asks to reduce motion.
+/// AnimationController, which would redraw every frame. Stays solid when the
+/// OS asks to reduce motion.
 class _BlinkingCursor extends StatefulWidget {
   const _BlinkingCursor();
 

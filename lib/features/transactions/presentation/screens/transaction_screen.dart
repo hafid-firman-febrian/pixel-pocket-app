@@ -77,7 +77,7 @@ class TransactionScreen extends ConsumerWidget {
         onRefresh: () => ref.refresh(transactionsControllerProvider.future),
         child: LayoutBuilder(
           builder: (context, constraints) {
-            // Center in the area left visible above the floating navbar.
+            // Center in the area left above any bottom padding.
             final bottom = MediaQuery.paddingOf(context).bottom;
             return SingleChildScrollView(
               physics: const AlwaysScrollableScrollPhysics(),

@@ -179,7 +179,6 @@ class AppShell extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      extendBody: true,
       body: SafeArea(bottom: false, child: shell),
       bottomNavigationBar: PixelBottomNav(
         items: _navItems,

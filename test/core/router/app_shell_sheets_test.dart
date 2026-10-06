@@ -81,12 +81,8 @@ void _phone(WidgetTester tester) {
   addTearDown(tester.view.reset);
 }
 
-Rect _barRect(WidgetTester tester) => tester.getRect(
-  find.descendant(
-    of: find.byType(PixelBottomNav),
-    matching: find.byType(BackdropFilter),
-  ),
-);
+Rect _barRect(WidgetTester tester) =>
+    tester.getRect(find.byType(PixelBottomNav));
 
 bool _hits(WidgetTester tester, Offset point, Finder target) {
   final result = HitTestResult();
@@ -101,7 +97,7 @@ Finder get _addButton => find.descendant(
 );
 
 void main() {
-  testWidgets('a sheet opened from a tab sits above the floating bar',
+  testWidgets('a sheet opened from a tab sits above the navbar',
       (tester) async {
     _phone(tester);
     await tester.pumpWidget(_app());
