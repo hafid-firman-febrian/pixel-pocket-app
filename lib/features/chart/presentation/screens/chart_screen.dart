@@ -21,6 +21,7 @@ class ChartScreen extends ConsumerWidget {
     final chartAsync = ref.watch(chartProvider);
 
     return SafeArea(
+      bottom: false,
       child: Scaffold(
         body: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -36,14 +37,18 @@ class ChartScreen extends ConsumerWidget {
               padding: AppSpacing.card,
               child: Divider(color: AppColors.border, thickness: 1),
             ),
-            Expanded(child: _chartBody(chartAsync, ref)),
+            Expanded(child: _chartBody(context, chartAsync, ref)),
           ],
         ),
       ),
     );
   }
 
-  Widget _chartBody(AsyncValue<ChartData> chartAsync, WidgetRef ref) {
+  Widget _chartBody(
+    BuildContext context,
+    AsyncValue<ChartData> chartAsync,
+    WidgetRef ref,
+  ) {
     if (chartAsync.hasError && !chartAsync.hasValue) {
       return PixelErrorView(
         failure: asFailure(chartAsync.error),
@@ -52,11 +57,11 @@ class ChartScreen extends ConsumerWidget {
       );
     }
     return SingleChildScrollView(
-      padding: const EdgeInsets.fromLTRB(
+      padding: EdgeInsets.fromLTRB(
         AppSpacing.s16,
         0,
         AppSpacing.s16,
-        AppSpacing.s24,
+        AppSpacing.bottomInset(context),
       ),
       child: _chartSection(chartAsync),
     );

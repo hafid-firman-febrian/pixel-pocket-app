@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:pixel_pocket/core/theme/app_color.dart';
+import 'package:pixel_pocket/core/theme/app_spacing.dart';
 import 'package:pixel_pocket/core/widgets/pixel_bottom_nav.dart';
 import 'package:pixel_pocket/core/widgets/pixel_button.dart';
 import 'package:pixelarticons/pixel.dart';
@@ -183,6 +184,45 @@ void main() {
       final snack = tester.getRect(find.byType(SnackBar));
       final nav = tester.getRect(find.byType(PixelBottomNav));
       expect(snack.bottom, lessThanOrEqualTo(nav.top));
+    });
+
+    testWidgets(
+        'with extendBody, a tab using SafeArea(bottom: false) gets the full '
+        'bar height as bottomInset', (tester) async {
+      late double inset;
+      await tester.pumpWidget(
+        _host(
+          body: SafeArea(
+            bottom: false,
+            child: Builder(
+              builder: (context) {
+                inset = AppSpacing.bottomInset(context);
+                return const SizedBox.expand();
+              },
+            ),
+          ),
+        ),
+      );
+      final barHeight = tester.getSize(find.byType(PixelBottomNav)).height;
+      expect(inset, barHeight + AppSpacing.s16);
+    });
+
+    testWidgets('a plain SafeArea would swallow the bar height', (tester) async {
+      late double inset;
+      await tester.pumpWidget(
+        _host(
+          body: SafeArea(
+            child: Builder(
+              builder: (context) {
+                inset = AppSpacing.bottomInset(context);
+                return const SizedBox.expand();
+              },
+            ),
+          ),
+        ),
+      );
+      // This is why every tab screen must use SafeArea(bottom: false).
+      expect(inset, AppSpacing.s16);
     });
   });
 }
