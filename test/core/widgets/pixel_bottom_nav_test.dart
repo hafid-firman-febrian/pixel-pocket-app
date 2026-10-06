@@ -205,6 +205,21 @@ void main() {
       expect(tester.getSize(find.byIcon(Pixel.home)), const Size(24, 24));
     });
 
+    testWidgets('with a home indicator, icons sit at the centre of the bar',
+        (tester) async {
+      final dpr = tester.view.devicePixelRatio;
+      tester.view.padding = FakeViewPadding(bottom: 34 * dpr);
+      tester.view.viewPadding = FakeViewPadding(bottom: 34 * dpr);
+      addTearDown(tester.view.reset);
+
+      await tester.pumpWidget(_host());
+      final bar = tester.getRect(find.byType(PixelBottomNav));
+      final icon = tester.getCenter(find.byIcon(Pixel.home)).dy;
+      final add = tester.getCenter(find.byType(PixelButton)).dy;
+      expect(icon, closeTo(bar.center.dy, 0.5));
+      expect(add, closeTo(bar.center.dy, 0.5));
+    });
+
     testWidgets('icons sit level with the centre of the + button',
         (tester) async {
       await tester.pumpWidget(_host());

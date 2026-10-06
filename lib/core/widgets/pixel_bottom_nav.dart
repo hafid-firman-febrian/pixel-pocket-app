@@ -49,32 +49,37 @@ class PixelBottomNav extends StatelessWidget {
       ),
     );
 
+    final safe = MediaQuery.paddingOf(context);
+
     return Container(
-      decoration: const BoxDecoration(
-        color: AppColors.background,
+      color: AppColors.background,
+      foregroundDecoration: const BoxDecoration(
         border: Border(top: BorderSide(color: AppColors.border, width: 1.5)),
       ),
-      child: SafeArea(
-        top: false,
-        child: SizedBox(
-          height: _barHeight,
-          child: Row(
-            children: [
-              for (var i = 0; i < half; i++) tab(i),
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: AppSpacing.s8),
-                child: Semantics(
-                  container: true,
-                  label: 'Add transaction',
-                  button: true,
-                  excludeSemantics: true,
-                  onTap: onAdd,
-                  child: PixelButton(icon: Pixel.plus, onPressed: onAdd),
-                ),
+      padding: EdgeInsets.fromLTRB(
+        safe.left,
+        safe.bottom / 2,
+        safe.right,
+        safe.bottom / 2,
+      ),
+      child: SizedBox(
+        height: _barHeight,
+        child: Row(
+          children: [
+            for (var i = 0; i < half; i++) tab(i),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: AppSpacing.s8),
+              child: Semantics(
+                container: true,
+                label: 'Add transaction',
+                button: true,
+                excludeSemantics: true,
+                onTap: onAdd,
+                child: PixelButton(icon: Pixel.plus, onPressed: onAdd),
               ),
-              for (var i = half; i < items.length; i++) tab(i),
-            ],
-          ),
+            ),
+            for (var i = half; i < items.length; i++) tab(i),
+          ],
         ),
       ),
     );
