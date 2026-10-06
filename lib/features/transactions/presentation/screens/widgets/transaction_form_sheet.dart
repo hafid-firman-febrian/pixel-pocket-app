@@ -19,15 +19,20 @@ import 'package:pixel_pocket/features/transactions/presentation/controllers/tran
 import 'package:pixel_pocket/features/transactions/presentation/states/transaction_state.dart';
 
 class TransactionFormSheet extends ConsumerStatefulWidget {
-  const TransactionFormSheet({super.key, this.existing});
+  const TransactionFormSheet({super.key, this.existing, this.initialDate});
 
   final TransactionModel? existing;
+
+  /// Default date for a new transaction. Null → follow the Transactions tab's
+  /// visible range ([RangeFilter.defaultEntryDate]). Ignored when editing.
+  final DateTime? initialDate;
 
   bool get isEditing => existing != null;
 
   static Future<bool?> show(
     BuildContext context, {
     TransactionModel? existing,
+    DateTime? initialDate,
   }) {
     return showModalBottomSheet<bool>(
       context: context,
@@ -35,7 +40,8 @@ class TransactionFormSheet extends ConsumerStatefulWidget {
       backgroundColor: Colors.transparent,
       barrierColor: AppColors.background.withValues(alpha: 0.72),
       useSafeArea: true,
-      builder: (_) => TransactionFormSheet(existing: existing),
+      builder: (_) =>
+          TransactionFormSheet(existing: existing, initialDate: initialDate),
     );
   }
 
@@ -62,7 +68,7 @@ class _TransactionFormSheetState extends ConsumerState<TransactionFormSheet> {
     _type = existing?.transactionType ?? 'expense';
     _date = existing != null
         ? (DateTime.tryParse(existing.transactionDate) ?? _todayFloor())
-        : ref.read(rangeFilterProvider).defaultEntryDate;
+        : (widget.initialDate ?? ref.read(rangeFilterProvider).defaultEntryDate);
     _categoryId = existing?.categoryId;
     _amountController = TextEditingController(
       text: existing != null ? CurrencyFormatter.input(existing.amount) : '0',
