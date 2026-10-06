@@ -16,6 +16,12 @@ Future<T?> showPixelBottomSheet<T>({
     backgroundColor: Colors.transparent,
     barrierColor: AppColors.background.withValues(alpha: 0.72),
     useSafeArea: true,
+    sheetAnimationStyle: const AnimationStyle(
+      duration: Duration(milliseconds: 420),
+      reverseDuration: Duration(milliseconds: 280),
+      curve: Easing.emphasizedDecelerate,
+      reverseCurve: FlippedCurve(Easing.emphasizedAccelerate),
+    ),
     builder: (context) => ScaffoldMessenger(
       child: Scaffold(
         backgroundColor: Colors.transparent,
