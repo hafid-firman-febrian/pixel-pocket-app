@@ -220,6 +220,26 @@ void main() {
       expect(add, closeTo(bar.center.dy, 0.5));
     });
 
+    testWidgets('without a bottom inset the bar still keeps room around icons',
+        (tester) async {
+      await tester.pumpWidget(_host());
+      final bar = tester.getRect(find.byType(PixelBottomNav));
+      final icon = tester.getCenter(find.byIcon(Pixel.home)).dy;
+      expect(bar.height, 80);
+      expect(icon, closeTo(bar.center.dy, 0.5));
+    });
+
+    testWidgets('a home-indicator inset replaces the minimum room, not adds',
+        (tester) async {
+      final dpr = tester.view.devicePixelRatio;
+      tester.view.padding = FakeViewPadding(bottom: 34 * dpr);
+      tester.view.viewPadding = FakeViewPadding(bottom: 34 * dpr);
+      addTearDown(tester.view.reset);
+
+      await tester.pumpWidget(_host());
+      expect(tester.getSize(find.byType(PixelBottomNav)).height, 90);
+    });
+
     testWidgets('icons sit level with the centre of the + button',
         (tester) async {
       await tester.pumpWidget(_host());
