@@ -23,8 +23,8 @@ class TransactionFormSheet extends ConsumerStatefulWidget {
 
   final TransactionModel? existing;
 
-  /// Default date for a new transaction. Null → follow the Transactions tab's
-  /// visible range ([RangeFilter.defaultEntryDate]). Ignored when editing.
+  
+  
   final DateTime? initialDate;
 
   bool get isEditing => existing != null;
@@ -34,12 +34,8 @@ class TransactionFormSheet extends ConsumerStatefulWidget {
     TransactionModel? existing,
     DateTime? initialDate,
   }) {
-    return showModalBottomSheet<bool>(
+    return showPixelBottomSheet<bool>(
       context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      barrierColor: AppColors.background.withValues(alpha: 0.72),
-      useSafeArea: true,
       builder: (_) =>
           TransactionFormSheet(existing: existing, initialDate: initialDate),
     );
@@ -115,7 +111,7 @@ class _TransactionFormSheetState extends ConsumerState<TransactionFormSheet> {
 
   void _setAmount(int value) {
     final clamped = value < 0 ? 0 : value;
-    // Zero tampil sebagai "0" (→ "Rp 0"), bukan kosong.
+    
     final text = clamped == 0
         ? '0'
         : CurrencyFormatter.input(clamped.toDouble());

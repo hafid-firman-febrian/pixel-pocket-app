@@ -194,13 +194,8 @@ class AppShell extends StatelessWidget {
   }
 
   void _onAdd(BuildContext context) {
-    // Open on the active tab's navigator, like the tabs' own sheets: the sheet
-    // then lives inside this Scaffold's body, so the form's snackbars render
-    // above it instead of behind a root-level route.
-    final tabContext =
-        shell.route.branches[shell.currentIndex].navigatorKey.currentContext;
     TransactionFormSheet.show(
-      tabContext ?? context,
+      context,
       initialDate: addTransactionInitialDate(
         currentPath: _navItems[shell.currentIndex].path,
         now: DateTime.now(),

@@ -7,9 +7,6 @@ import 'package:pixel_pocket/core/theme/app_spacing.dart';
 import 'package:pixel_pocket/core/widgets/pixel_button.dart';
 import 'package:pixelarticons/pixel.dart';
 
-// ─────────────────────────────────────────────
-// Model satu tab
-// ─────────────────────────────────────────────
 class PixelNavItem {
   const PixelNavItem({
     required this.icon,
@@ -22,10 +19,6 @@ class PixelNavItem {
   final String path;
 }
 
-// ─────────────────────────────────────────────
-// Bottom nav docked to the screen edge — icon-only tabs, a blinking terminal
-// cursor under the active one, and the add-transaction button in the middle.
-// ─────────────────────────────────────────────
 class PixelBottomNav extends StatelessWidget {
   const PixelBottomNav({
     super.key,
@@ -40,7 +33,6 @@ class PixelBottomNav extends StatelessWidget {
   final ValueChanged<int> onTap;
   final VoidCallback onAdd;
 
-  /// How long the active tab's cursor stays on (and then off) per blink.
   static const cursorBlinkInterval = Duration(milliseconds: 530);
 
   static const double _barHeight = 56;
@@ -89,9 +81,6 @@ class PixelBottomNav extends StatelessWidget {
   }
 }
 
-// ─────────────────────────────────────────────
-// Satu tab — icon + slot kursor, ikon "tenggelam" 2px saat ditekan
-// ─────────────────────────────────────────────
 class _PixelNavTab extends StatefulWidget {
   const _PixelNavTab({
     required this.item,
@@ -143,13 +132,11 @@ class _PixelNavTabState extends State<_PixelNavTab> {
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                // Mirrors the cursor slot below, so the icon itself sits at
-                // the bar's vertical centre (level with the + button).
                 const SizedBox(height: _cursorGap + _cursorSlot),
-                Icon(widget.item.icon, size: 20, color: color),
+
+                Icon(widget.item.icon, size: 24, color: color),
                 const SizedBox(height: _cursorGap),
-                // Reserved on every tab so icons don't shift when the active
-                // tab changes.
+
                 SizedBox(
                   height: _cursorSlot,
                   child: widget.isActive ? const _BlinkingCursor() : null,
@@ -163,13 +150,6 @@ class _PixelNavTabState extends State<_PixelNavTab> {
   }
 }
 
-// ─────────────────────────────────────────────
-// Kursor terminal `_` di bawah tab aktif
-// ─────────────────────────────────────────────
-
-/// Blinks with a stepped on/off [Timer] (≈2 redraws per second) instead of an
-/// AnimationController, which would redraw every frame. Stays solid when the
-/// OS asks to reduce motion.
 class _BlinkingCursor extends StatefulWidget {
   const _BlinkingCursor();
 

@@ -199,6 +199,12 @@ void main() {
       expect(result.path.any((entry) => entry.target == bar), isTrue);
     });
 
+    testWidgets('tab icons render at 24px, the pixelarticons grid size',
+        (tester) async {
+      await tester.pumpWidget(_host());
+      expect(tester.getSize(find.byIcon(Pixel.home)), const Size(24, 24));
+    });
+
     testWidgets('icons sit level with the centre of the + button',
         (tester) async {
       await tester.pumpWidget(_host());

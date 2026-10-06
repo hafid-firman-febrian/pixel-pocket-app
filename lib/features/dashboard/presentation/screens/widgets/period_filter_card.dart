@@ -104,12 +104,8 @@ class _PeriodFilterCardState extends ConsumerState<PeriodFilterCard> {
 
   Future<void> _openPicker() async {
     setState(() => _sheetOpen = true);
-    await showModalBottomSheet<void>(
+    await showPixelBottomSheet<void>(
       context: context,
-      backgroundColor: Colors.transparent,
-      barrierColor: AppColors.background.withValues(alpha: 0.72),
-      isScrollControlled: true,
-      useSafeArea: true,
       builder: (_) {
         return const PixelBottomSheetFrame(
           title: 'SELECT PERIOD',

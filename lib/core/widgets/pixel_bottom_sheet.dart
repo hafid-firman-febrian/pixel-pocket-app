@@ -5,11 +5,27 @@ import 'package:pixel_pocket/core/theme/app_text_style.dart';
 import 'package:pixel_pocket/core/widgets/pixel_card.dart';
 import 'package:pixelarticons/pixel.dart';
 
-/// Bottom-sheet frame in the pixel-card style — surface fill, hard border, 3D
-/// offset shadow, sharp corners — with a title + close header. Shared by the
-/// period picker and the transaction form so all sheets look the same.
-///
-/// Open it with `showModalBottomSheet(backgroundColor: Colors.transparent, ...)`.
+Future<T?> showPixelBottomSheet<T>({
+  required BuildContext context,
+  required WidgetBuilder builder,
+}) {
+  return showModalBottomSheet<T>(
+    context: context,
+    useRootNavigator: true,
+    isScrollControlled: true,
+    backgroundColor: Colors.transparent,
+    barrierColor: AppColors.background.withValues(alpha: 0.72),
+    useSafeArea: true,
+    builder: (context) => ScaffoldMessenger(
+      child: Scaffold(
+        backgroundColor: Colors.transparent,
+        resizeToAvoidBottomInset: false,
+        body: Builder(builder: builder),
+      ),
+    ),
+  );
+}
+
 class PixelBottomSheetFrame extends StatelessWidget {
   const PixelBottomSheetFrame({
     super.key,
@@ -23,9 +39,9 @@ class PixelBottomSheetFrame extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final size = MediaQuery.sizeOf(context);
-    // Lift the sheet above the on-screen keyboard when a field is focused.
+
     final keyboard = MediaQuery.viewInsetsOf(context).bottom;
-    // ...and above the home indicator when the sheet reaches the screen edge.
+
     final bottomInset = MediaQuery.paddingOf(context).bottom;
 
     return Align(

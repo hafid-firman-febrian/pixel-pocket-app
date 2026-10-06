@@ -97,7 +97,7 @@ Finder get _addButton => find.descendant(
 );
 
 void main() {
-  testWidgets('a sheet opened from a tab sits above the navbar',
+  testWidgets('CANCEL in a sheet opened from a tab takes its own tap',
       (tester) async {
     _phone(tester);
     await tester.pumpWidget(_app());
@@ -106,11 +106,44 @@ void main() {
     await tester.tap(find.text('edit ${AppRoutes.dashboard}'));
     await tester.pumpAndSettle();
 
-    final bar = _barRect(tester);
     final cancel = tester.getRect(find.text('CANCEL'));
-    expect(cancel.bottom, lessThanOrEqualTo(bar.top));
     expect(_hits(tester, cancel.center, find.text('CANCEL')), isTrue);
     expect(_hits(tester, cancel.center, find.byType(PixelBottomNav)), isFalse);
+  });
+
+  testWidgets('a sheet opened from a tab covers the navbar', (tester) async {
+    _phone(tester);
+    await tester.pumpWidget(_app());
+    await tester.pumpAndSettle();
+    final bar = _barRect(tester);
+
+    await tester.tap(find.text('edit ${AppRoutes.dashboard}'));
+    await tester.pumpAndSettle();
+
+    // Anywhere on the bar — the tabs at its edges included — now lands on the
+    // sheet's barrier, not the navbar.
+    for (final x in [bar.left + 20, bar.center.dx, bar.right - 20]) {
+      expect(
+        _hits(tester, Offset(x, bar.center.dy), find.byType(PixelBottomNav)),
+        isFalse,
+        reason: 'x=$x',
+      );
+    }
+  });
+
+  testWidgets('+ cannot stack a second sheet while one is open',
+      (tester) async {
+    _phone(tester);
+    await tester.pumpWidget(_app());
+    await tester.pumpAndSettle();
+    final addCenter = tester.getCenter(_addButton);
+
+    await tester.tap(_addButton);
+    await tester.pumpAndSettle();
+    await tester.tapAt(addCenter);
+    await tester.pumpAndSettle();
+
+    expect(find.text('NEW TRANSACTION'), findsOneWidget);
   });
 
   testWidgets('a validation snackbar from the + sheet is shown above it',
