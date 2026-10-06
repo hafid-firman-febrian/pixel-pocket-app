@@ -3,7 +3,6 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:pixel_pocket/core/error/failure.dart';
-import 'package:pixel_pocket/core/theme/app_color.dart';
 import 'package:pixel_pocket/core/theme/app_spacing.dart';
 import 'package:pixel_pocket/core/widgets/pixel_bottom_sheet.dart';
 import 'package:pixel_pocket/core/widgets/pixel_button.dart';
@@ -24,12 +23,8 @@ class SalaryPeriodFormSheet extends ConsumerStatefulWidget {
     BuildContext context, {
     SalaryPeriodModel? existing,
   }) {
-    return showModalBottomSheet<bool>(
+    return showPixelBottomSheet<bool>(
       context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      barrierColor: AppColors.background.withValues(alpha: 0.72),
-      useSafeArea: true,
       builder: (_) => SalaryPeriodFormSheet(existing: existing),
     );
   }

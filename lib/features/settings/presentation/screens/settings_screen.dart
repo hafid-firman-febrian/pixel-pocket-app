@@ -41,6 +41,7 @@ class SettingsScreen extends ConsumerWidget {
         !categoriesAsync.hasValue;
 
     return SafeArea(
+      bottom: false,
       child: Scaffold(
         body: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -61,11 +62,11 @@ class SettingsScreen extends ConsumerWidget {
                       fill: true,
                     )
                   : ListView(
-                      padding: const EdgeInsets.fromLTRB(
+                      padding: EdgeInsets.fromLTRB(
                         AppSpacing.s16,
                         AppSpacing.section,
                         AppSpacing.s16,
-                        AppSpacing.s16,
+                        AppSpacing.bottomInset(context),
                       ),
                       children: [
                         const _SectionLabel('DATA'),

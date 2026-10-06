@@ -7,6 +7,7 @@ import 'package:pixel_pocket/features/salary_period/presentation/states/salary_p
 import 'package:pixel_pocket/features/transactions/application/services/transaction_service.dart';
 import 'package:pixel_pocket/features/transactions/domain/models/transaction_filter.dart';
 import 'package:pixel_pocket/features/transactions/domain/models/transaction_model.dart';
+import 'package:pixel_pocket/features/transactions/presentation/states/transaction_state.dart';
 
 sealed class PeriodSelection {
   const PeriodSelection();
@@ -47,6 +48,7 @@ final effectivePeriodProvider = FutureProvider<SalaryPeriodModel?>((ref) async {
 final dashboardSummaryProvider = FutureProvider<TransactionSummary>((
   ref,
 ) async {
+  ref.watch(transactionsRevisionProvider);
   final period = await ref.watch(effectivePeriodProvider.future);
   return ref.watch(dashboardServiceProvider).summary(period?.id);
 });
@@ -54,6 +56,7 @@ final dashboardSummaryProvider = FutureProvider<TransactionSummary>((
 final expensesByCategoryProvider = FutureProvider<List<CategorySummary>>((
   ref,
 ) async {
+  ref.watch(transactionsRevisionProvider);
   final period = await ref.watch(effectivePeriodProvider.future);
   return ref.watch(dashboardServiceProvider).expensesByCategory(period?.id);
 });
@@ -62,6 +65,7 @@ final expensesByCategoryProvider = FutureProvider<List<CategorySummary>>((
 final recentTransactionsProvider = FutureProvider<List<TransactionModel>>((
   ref,
 ) async {
+  ref.watch(transactionsRevisionProvider);
   final period = await ref.watch(effectivePeriodProvider.future);
   return ref
       .watch(transactionServiceProvider)

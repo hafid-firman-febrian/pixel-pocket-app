@@ -50,6 +50,7 @@ class DashboardScreen extends ConsumerWidget {
         !recentAsync.hasValue;
 
     return SafeArea(
+      bottom: false,
       child: Scaffold(
         body: RefreshIndicator(
           onRefresh: () => _refresh(ref),
@@ -63,7 +64,10 @@ class DashboardScreen extends ConsumerWidget {
                   onRetry: () => _refresh(ref),
                 )
               : ListView(
-                  padding: EdgeInsets.symmetric(vertical: AppSpacing.section),
+                  padding: EdgeInsets.only(
+                    top: AppSpacing.section,
+                    bottom: AppSpacing.bottomInset(context),
+                  ),
                   physics: const AlwaysScrollableScrollPhysics(),
                   children: [
                     _DashboardHeader(

@@ -179,3 +179,8 @@ final rangeFilterProvider = StateProvider<RangeFilter>(
 /// When non-empty, the controller loads every transaction in the active range
 /// and filters locally by description / category name.
 final transactionSearchProvider = StateProvider<String>((ref) => '');
+
+/// Bumped after every successful create / edit / delete. Read models shown
+/// outside the Transactions tab (dashboard, chart) watch it so a save made
+/// from the navbar's + button on any tab shows up there right away.
+final transactionsRevisionProvider = StateProvider<int>((ref) => 0);

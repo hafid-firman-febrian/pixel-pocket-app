@@ -10,23 +10,16 @@ import 'package:pixel_pocket/core/widgets/pixel_snack_bar.dart';
 import 'package:pixel_pocket/features/categories/domain/models/category_model.dart';
 import 'package:pixel_pocket/features/categories/presentation/controllers/category_controller.dart';
 
-/// Bottom-sheet form to create or edit a category (name, type, color).
 class CategoryFormSheet extends ConsumerStatefulWidget {
   const CategoryFormSheet({super.key, this.existing});
 
-  /// When non-null the form edits this category instead of creating one.
   final CategoryModel? existing;
 
   bool get isEditing => existing != null;
 
-  /// Opens the sheet. Resolves to `true` when a category was saved.
   static Future<bool?> show(BuildContext context, {CategoryModel? existing}) {
-    return showModalBottomSheet<bool>(
+    return showPixelBottomSheet<bool>(
       context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      barrierColor: AppColors.background.withValues(alpha: 0.72),
-      useSafeArea: true,
       builder: (_) => CategoryFormSheet(existing: existing),
     );
   }
@@ -36,11 +29,25 @@ class CategoryFormSheet extends ConsumerStatefulWidget {
 }
 
 class _CategoryFormSheetState extends ConsumerState<CategoryFormSheet> {
-  /// Retro palette the user can pick from (sent to the API as hex).
   static const _palette = [
-    '#7D9B76', '#5F8A8B', '#8B6355', '#8C7B6B', '#C4A882', '#6B7C8D',
-    '#9B6B8C', '#B5847A', '#CC7358', '#A0856C', '#7B6D8D', '#4A7C8C',
-    '#6B8C5F', '#5B7A8C', '#8C7A3D', '#8C5B3D', '#7A8C6B', '#8C8C7B',
+    '#7D9B76',
+    '#5F8A8B',
+    '#8B6355',
+    '#8C7B6B',
+    '#C4A882',
+    '#6B7C8D',
+    '#9B6B8C',
+    '#B5847A',
+    '#CC7358',
+    '#A0856C',
+    '#7B6D8D',
+    '#4A7C8C',
+    '#6B8C5F',
+    '#5B7A8C',
+    '#8C7A3D',
+    '#8C5B3D',
+    '#7A8C6B',
+    '#8C8C7B',
   ];
 
   final _formKey = GlobalKey<FormState>();

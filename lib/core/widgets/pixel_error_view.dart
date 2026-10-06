@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 import 'package:pixel_pocket/core/error/failure.dart';
 import 'package:pixel_pocket/core/theme/app_color.dart';
@@ -85,11 +87,17 @@ class PixelErrorView extends StatelessWidget {
 
     if (!fill) return content;
 
+    // Keep the error centered in the part of the screen left above any bottom
+    // padding (e.g. a home indicator).
+    final bottom = MediaQuery.paddingOf(context).bottom;
     return LayoutBuilder(
       builder: (context, constraints) => SingleChildScrollView(
         physics: const AlwaysScrollableScrollPhysics(),
+        padding: EdgeInsets.only(bottom: bottom),
         child: ConstrainedBox(
-          constraints: BoxConstraints(minHeight: constraints.maxHeight),
+          constraints: BoxConstraints(
+            minHeight: math.max(0, constraints.maxHeight - bottom),
+          ),
           child: content,
         ),
       ),

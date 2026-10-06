@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -33,12 +34,8 @@ class TransactionScreen extends ConsumerWidget {
     ref.watch(categoriesProvider);
 
     return SafeArea(
+      bottom: false,
       child: Scaffold(
-        floatingActionButton: PixelButton(
-          icon: Pixel.plus,
-          size: PixelButtonSize.lg,
-          onPressed: () => TransactionFormSheet.show(context),
-        ),
         body: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -57,6 +54,7 @@ class TransactionScreen extends ConsumerWidget {
                   failure: asFailure(error),
                   onRetry: () =>
                       ref.invalidate(transactionsControllerProvider),
+                  fill: true,
                 ),
                 _ => const _ListSkeleton(),
               },
@@ -78,13 +76,20 @@ class TransactionScreen extends ConsumerWidget {
         backgroundColor: AppColors.surface,
         onRefresh: () => ref.refresh(transactionsControllerProvider.future),
         child: LayoutBuilder(
-          builder: (context, constraints) => SingleChildScrollView(
-            physics: const AlwaysScrollableScrollPhysics(),
-            child: ConstrainedBox(
-              constraints: BoxConstraints(minHeight: constraints.maxHeight),
-              child: const Center(child: _EmptyView()),
-            ),
-          ),
+          builder: (context, constraints) {
+            // Center in the area left above any bottom padding.
+            final bottom = MediaQuery.paddingOf(context).bottom;
+            return SingleChildScrollView(
+              physics: const AlwaysScrollableScrollPhysics(),
+              padding: EdgeInsets.only(bottom: bottom),
+              child: ConstrainedBox(
+                constraints: BoxConstraints(
+                  minHeight: math.max(0, constraints.maxHeight - bottom),
+                ),
+                child: const Center(child: _EmptyView()),
+              ),
+            );
+          },
         ),
       );
     }
@@ -158,11 +163,11 @@ class TransactionScreen extends ConsumerWidget {
 
         child: ListView(
           physics: const AlwaysScrollableScrollPhysics(),
-          padding: const EdgeInsets.fromLTRB(
+          padding: EdgeInsets.fromLTRB(
             AppSpacing.s8,
             AppSpacing.s8,
             AppSpacing.s8,
-            96,
+            AppSpacing.bottomInset(context),
           ),
           children: children,
         ),
@@ -432,11 +437,11 @@ class _ListSkeleton extends StatelessWidget {
     return Skeletonizer(
       child: ListView(
         physics: const NeverScrollableScrollPhysics(),
-        padding: const EdgeInsets.fromLTRB(
+        padding: EdgeInsets.fromLTRB(
           AppSpacing.s8,
           AppSpacing.s8,
           AppSpacing.s8,
-          96,
+          AppSpacing.bottomInset(context),
         ),
         children: [
           for (var g = 0; g < 2; g++) ...[

@@ -13,8 +13,6 @@ import 'package:pixel_pocket/features/transactions/presentation/screens/widgets/
 import 'package:pixelarticons/pixel.dart';
 import 'package:skeletonizer/skeletonizer.dart';
 
-/// Bottom sheet listing a category's transactions within the effective
-/// dashboard period. Read-only, paginated via a "Load more" button.
 class CategoryTransactionsSheet extends ConsumerStatefulWidget {
   const CategoryTransactionsSheet({
     super.key,
@@ -30,12 +28,8 @@ class CategoryTransactionsSheet extends ConsumerStatefulWidget {
     required int categoryId,
     required String categoryName,
   }) {
-    return showModalBottomSheet<void>(
+    return showPixelBottomSheet<void>(
       context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      barrierColor: AppColors.background.withValues(alpha: 0.72),
-      useSafeArea: true,
       builder: (_) => CategoryTransactionsSheet(
         categoryId: categoryId,
         categoryName: categoryName,
