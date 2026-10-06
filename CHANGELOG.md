@@ -6,9 +6,61 @@ Pixel Pocket is local-first: the on-device Drift/SQLite database is the source o
 
 ---
 
-## 1.0.4 — unreleased
+## 1.0.5 — unreleased
 
-Covers everything on `dev` that is not yet in `main` (`main` sits at 1.0.0+2). Two user-visible features land in this release: PIN recovery, and a guard that stops auto-backup from destroying a cloud backup after a reinstall.
+Covers everything merged after 1.0.4. This release is mostly a visual refresh: a new navigation bar, a terminal-style PIN lock, and a new app icon. It also fixes stale Home and Chart data after saving a transaction. There is no database schema change and no new permission.
+
+### Added
+
+**Icon-only navigation bar with a global add button**
+
+- The bottom bar shows four icon-only tabs (Home, Transactions, Chart, Settings) with a **+** button in the middle that adds a transaction from any tab. It replaces the add button that only the Transactions tab had.
+- Tab names are no longer drawn. Long-press a tab to see its name; screen readers still announce every tab and which one is selected.
+- A blinking `_` cursor marks the active tab. With *Reduce Motion* on, it stays solid.
+- The new transaction's date follows where you are: on the Transactions tab it uses the range you are looking at, and on any other tab it defaults to today.
+- The bar keeps room around its icons on every device: 90 pt on iPhones with Face ID, and 80 dp where the system reports no bottom inset, such as Android phones using gesture navigation, so the icons never sit flush against the swipe area.
+- Lists scroll fully clear of the bar, so the last item is never hidden behind it, and full-screen error messages stay centred in the part of the screen you can see.
+
+**Retro-terminal PIN screens**
+
+Unlock and Create PIN now read like a terminal session: a `PIXEL_POCKET` header, `>` status lines, a `PIN: ■ ■ ▮ _` prompt with a blinking block cursor, faint scanlines, and an outlined keypad that lights up when pressed.
+
+- A wrong PIN prints `> ACCESS DENIED` and how many attempts are left.
+- After six wrong attempts, `> SYSTEM LOCKED: 30s` counts down and the **Forgot PIN?** link from 1.0.4 appears as `> [ FORGOT PIN? ]`.
+- Creating a PIN marks the first entry with ✓ and asks you to re-enter it. A mismatch prints `> PIN MISMATCH. START OVER`.
+- Only the look changed. The PIN is still 4 digits, with the same 6-attempt limit and 30-second lockout.
+
+**New app icon**
+
+The icon and splash screen are now a pixel-art `~$_` terminal prompt, replacing `~$`. It is used for the launcher icon on iOS and Android, the native splash, and the in-app splash.
+
+### Changed
+
+- **Sheets cover the navigation bar** and animate more gently (420 ms to open, 280 ms to close). While a sheet is open, **+** cannot open a second one, and form validation messages appear above the sheet.
+- **Long button labels shrink to fit** instead of overflowing their button.
+- **The dashboard lock button** draws its icon dark on the orange button so it is easier to see.
+
+### Fixed
+
+- **Home and Chart showed stale numbers after saving a transaction.** Both tabs stay alive in the background, so after adding a transaction on the Transactions tab they kept showing the old totals. The dashboard summary, the recent list, and the chart now refresh as soon as a transaction is created, edited, or deleted.
+
+### Upgrade notes
+
+- **No migration.** The database schema and stored preferences are unchanged, and the PIN carries over.
+- **iOS may show the old `~$` splash once after updating.** iOS caches the launch screen. It is replaced after the app has been opened.
+- **Known limitation:** the Android launcher icon is still a legacy icon, not an adaptive one, so some launchers draw it smaller and inside a white circle.
+
+### Store listing blurb
+
+> **A fresh look.** New icon-only navigation with a + button on every screen, a terminal-style PIN lock, and a new `~$_` app icon.
+>
+> Also: Home and Chart now update as soon as you save a transaction.
+
+---
+
+## 1.0.4 — 2026-08-08
+
+Merged to `main` on 2026-08-08. Two user-visible features land in this release: PIN recovery, and a guard that stops auto-backup from destroying a cloud backup after a reinstall.
 
 ### Added
 
@@ -53,7 +105,7 @@ Connecting to Google never restored anything, while auto-backup defaults to on. 
 
 ---
 
-## Store listing blurb
+## Store listing blurb (1.0.4)
 
 Short enough for the Play Store / App Store "What's new" field:
 
