@@ -36,12 +36,12 @@ Pixel Pocket records daily transactions, summarises balances, breaks spending do
 
 ## Screenshots
 
-The four main tabs, captured on an iPhone simulator with seeded demo data:
+The four main tabs and the PIN lock, captured on an iPhone simulator with seeded demo data:
 
-| Dashboard | Transactions | Chart | Settings |
-| :---: | :---: | :---: | :---: |
-| <img src="docs/screenshots/dashboard.png" width="100%" alt="Dashboard — period filter, balance summary, expenses by category"> | <img src="docs/screenshots/transactions.png" width="100%" alt="Transactions — search, range filters, and a day's entries"> | <img src="docs/screenshots/chart.png" width="100%" alt="Chart — income vs. expense time series"> | <img src="docs/screenshots/settings.png" width="100%" alt="Settings — salary periods and category management"> |
-| Period filter, balance summary, expenses by category, recent activity | Search, range filters, daily groups, add FAB | Income vs. expense time series (`fl_chart`) | Salary periods, categories, backup, PIN reset |
+| Dashboard | Transactions | Chart | Settings | Unlock |
+| :---: | :---: | :---: | :---: | :---: |
+| <img src="docs/screenshots/dashboard.png" width="100%" alt="Dashboard — period filter, balance summary, expenses by category"> | <img src="docs/screenshots/transactions.png" width="100%" alt="Transactions — search, range filters, and a week of daily groups"> | <img src="docs/screenshots/chart.png" width="100%" alt="Chart — yearly income vs. expense time series"> | <img src="docs/screenshots/settings.png" width="100%" alt="Settings — salary periods and category management"> | <img src="docs/screenshots/unlock.png" width="100%" alt="Unlock — retro-terminal PIN lock with a blinking cursor"> |
+| Period filter, balance summary, expenses by category, recent activity | Search, range filters, daily groups | Income vs. expense time series (`fl_chart`) | Salary periods, categories, backup, PIN reset | Retro-terminal PIN lock, 6-attempt lockout, Forgot PIN |
 
 <sub>Balances on the dashboard are hidden behind the app's built-in privacy toggle.</sub>
 
