@@ -132,6 +132,7 @@ class TransactionsController
     }
 
     unawaited(ref.read(autoBackupCoordinatorProvider).markDirty());
+    ref.read(transactionsRevisionProvider.notifier).state++;
 
     final current = state.valueOrNull ?? const [];
     state = AsyncData(current.where((t) => t.id != id).toList(growable: false));
@@ -150,6 +151,7 @@ class TransactionsController
     }
 
     unawaited(ref.read(autoBackupCoordinatorProvider).markDirty());
+    ref.read(transactionsRevisionProvider.notifier).state++;
 
     final range = ref.read(rangeFilterProvider);
     final query = ref.read(transactionSearchProvider).trim();

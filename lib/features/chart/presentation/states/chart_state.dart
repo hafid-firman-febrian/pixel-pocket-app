@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:pixel_pocket/features/chart/application/services/chart_service.dart';
 import 'package:pixel_pocket/features/chart/domain/models/chart_data.dart';
 import 'package:pixel_pocket/features/salary_period/domain/models/salary_period_model.dart';
+import 'package:pixel_pocket/features/transactions/presentation/states/transaction_state.dart';
 
 enum ChartUnit { week, month, year }
 
@@ -35,6 +36,7 @@ final chartFilterProvider = StateProvider<ChartFilter>(
 final chartViewProvider = StateProvider<ChartView>((ref) => ChartView.line);
 
 final chartProvider = FutureProvider<ChartData>((ref) {
+  ref.watch(transactionsRevisionProvider);
   final filter = ref.watch(chartFilterProvider);
   final service = ref.watch(chartServiceProvider);
   if (filter.salaryPeriod != null) {
