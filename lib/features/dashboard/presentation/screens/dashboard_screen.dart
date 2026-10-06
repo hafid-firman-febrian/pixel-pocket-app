@@ -155,6 +155,7 @@ class _DashboardHeader extends StatelessWidget {
             onPressed: onLock,
             variant: PixelButtonVariant.secondary,
             icon: Pixel.lock,
+            foregroundColor: AppColors.surface,
             size: PixelButtonSize.sm,
           ),
         ],
