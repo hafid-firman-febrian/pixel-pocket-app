@@ -91,28 +91,41 @@ class _UnlockPinScreenState extends ConsumerState<UnlockPinScreen> {
     });
   }
 
+  List<PinLine> get _lines {
+    if (_locked) {
+      return [
+        const PinLine('AUTH REQUIRED'),
+        const PinLine.error('TOO MANY ATTEMPTS'),
+        PinLine.error('SYSTEM LOCKED: ${_lockSecondsLeft}s'),
+      ];
+    }
+    final remaining = _maxAttempts - _wrongAttempts;
+    return [
+      const PinLine('AUTH REQUIRED'),
+      const PinLine('ENTER $_pinLength-DIGIT PIN'),
+      if (_wrongAttempts > 0) ...[
+        const PinLine.error('ACCESS DENIED'),
+        PinLine.error(
+          '$remaining ${remaining == 1 ? 'ATTEMPT' : 'ATTEMPTS'} LEFT',
+        ),
+      ],
+    ];
+  }
+
   @override
   Widget build(BuildContext context) {
-    final remaining = _maxAttempts - _wrongAttempts;
-    final subtitle = _locked
-        ? 'Too many attempts. Try again in ${_lockSecondsLeft}s'
-        : _wrongAttempts == 0
-        ? 'Unlock Pixel Pocket'
-        : 'Wrong PIN — $remaining attempts left';
     return PinScaffold(
-      title: 'Enter PIN',
-      subtitle: subtitle,
+      lines: _lines,
       length: _pinLength,
       filled: _input.length,
       error: _error,
       keypadEnabled: !_locked,
-      subtitleError: _wrongAttempts > 0,
       onDigit: _onDigit,
       onBackspace: _onBackspace,
       footer: _locked
-          ? TextButton(
-              onPressed: () => context.push(AppRoutes.resetPin),
-              child: const Text('Forgot PIN?'),
+          ? PinLink(
+              label: 'FORGOT PIN?',
+              onTap: () => context.push(AppRoutes.resetPin),
             )
           : null,
     );
