@@ -195,7 +195,7 @@ No backend is required. On first launch the app creates the local database and s
 
 ### Regenerating icon and splash
 
-Run after changing `assets/icons/app_icon.png` or the splash colours in `pubspec.yaml`:
+The icon's source is the pixel-art `assets/icons/A-terminal-thin.svg`. It is rendered at integer scales into `app_icon.png` (1024 px, launcher icon) and `pixel_pocket_icon_splash.png` (1152 px with the art shrunk to 832 px so it fits Android 12's circular splash mask; also used by the native and in-app splash). Run after changing either PNG or the splash colours in `pubspec.yaml`:
 
 ```bash
 dart run flutter_launcher_icons
