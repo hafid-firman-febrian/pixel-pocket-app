@@ -46,3 +46,6 @@ app.*.map.json
 
 # Planning docs (local only, not tracked)
 docs/superpowers/
+
+# Superpowers brainstorm companion (local mockups)
+.superpowers/
