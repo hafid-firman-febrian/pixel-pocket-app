@@ -8,7 +8,7 @@ Pixel Pocket is local-first: the on-device Drift/SQLite database is the source o
 
 ## 1.0.5 — unreleased
 
-Covers everything merged after 1.0.4. This release is mostly a visual refresh: a new navigation bar, a terminal-style PIN lock, and a new app icon. It also fixes stale Home and Chart data after saving a transaction. There is no database schema change and no new permission.
+Covers everything merged after 1.0.4. This release is mostly a visual refresh: a new navigation bar, a terminal-style PIN lock, and a new app icon. It also fixes stale Home and Chart data after saving a transaction, and stops Android from bringing back an old copy of the app's data after a reinstall. There is no database schema change and no new permission.
 
 ### Added
 
@@ -43,18 +43,22 @@ The icon and splash screen are now a pixel-art `~$_` terminal prompt, replacing 
 ### Fixed
 
 - **Home and Chart showed stale numbers after saving a transaction.** Both tabs stay alive in the background, so after adding a transaction on the Transactions tab they kept showing the old totals. The dashboard summary, the recent list, and the chart now refresh as soon as a transaction is created, edited, or deleted.
+- **Reinstalling on Android brought back an old copy of the app's data.** Android's own backup saved a snapshot of the app to the Google account, at most once a day, and restored it on reinstall. The result was a mix that matched no real moment: Google Sheets shown as connected but expired, custom categories from days earlier, and none of the recent transactions. Clearing app data or disconnecting first did not help, because the snapshot lives in the Google account rather than on the phone. Android backup and device-to-device transfer are now turned off for Pixel Pocket, so a reinstall always starts clean. This is Android's system backup only: Pixel Pocket's own **Auto-backup** to Google Sheets still runs about 10 seconds after every change, exactly as before.
 
 ### Upgrade notes
 
 - **No migration.** The database schema and stored preferences are unchanged, and the PIN carries over.
+- **On Android, a reinstall or a new phone now starts empty.** Google Sheets is the only way to carry data across: run **Backup Now** before, then **Connect** and **Restore** after. A snapshot Android saved before this update may still sit in the Google account, but this version never restores it.
+- **Already hit the stale restore?** Updating does not clean up data that Android restored earlier, because it is already on the phone. If Settings shows Google Sheets as connected but backups fail as expired, tap **Disconnect**, then **Connect**, then choose **Restore** in the **Backup found** dialog. Do not tap **Backup Now** before restoring: it would overwrite the sheet with the near-empty data on the phone.
 - **iOS may show the old `~$` splash once after updating.** iOS caches the launch screen. It is replaced after the app has been opened.
 - **Known limitation:** the Android launcher icon is still a legacy icon, not an adaptive one, so some launchers draw it smaller and inside a white circle.
+- **Known limitation:** when Google authorization has expired, auto-backup keeps failing and Settings only shows `⚠ Changes not backed up yet`, without saying that a reconnect is needed.
 
 ### Store listing blurb
 
 > **A fresh look.** New icon-only navigation with a + button on every screen, a terminal-style PIN lock, and a new `~$_` app icon.
 >
-> Also: Home and Chart now update as soon as you save a transaction.
+> Also: Home and Chart now update as soon as you save a transaction, and reinstalling on Android no longer brings back an old copy of your data.
 
 ---
 
