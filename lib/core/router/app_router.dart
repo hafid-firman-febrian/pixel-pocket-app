@@ -6,6 +6,7 @@ import 'package:pixel_pocket/features/chart/presentation/screens/chart_screen.da
 import 'package:pixel_pocket/features/dashboard/presentation/screens/dashboard_screen.dart';
 import 'package:pixel_pocket/features/settings/presentation/screens/settings_screen.dart';
 import 'package:pixel_pocket/features/transactions/presentation/screens/transaction_screen.dart';
+import 'package:pixel_pocket/features/transactions/presentation/screens/widgets/transaction_form_sheet.dart';
 import 'package:pixelarticons/pixel.dart';
 
 import '../../features/auth/presentation/controllers/auth_controller.dart';
@@ -41,6 +42,17 @@ const _navItems = [
     path: AppRoutes.settings,
   ),
 ];
+
+/// Default date for a transaction started from the navbar's + button. On the
+/// Transactions tab the form keeps following the visible range (null); every
+/// other tab defaults to today, so a range parked on an old month there
+/// doesn't leak into Home, Chart or Settings.
+DateTime? addTransactionInitialDate({
+  required String currentPath,
+  required DateTime now,
+}) => currentPath == AppRoutes.transactions
+    ? null
+    : DateTime(now.year, now.month, now.day);
 
 final routerProvider = Provider<GoRouter>((ref) {
   return GoRouter(
@@ -172,11 +184,22 @@ class AppShell extends StatelessWidget {
         items: _navItems,
         currentIndex: shell.currentIndex,
         onTap: _onTap,
+        onAdd: () => _onAdd(context),
       ),
     );
   }
 
   void _onTap(int index) {
     shell.goBranch(index, initialLocation: index == shell.currentIndex);
+  }
+
+  void _onAdd(BuildContext context) {
+    TransactionFormSheet.show(
+      context,
+      initialDate: addTransactionInitialDate(
+        currentPath: _navItems[shell.currentIndex].path,
+        now: DateTime.now(),
+      ),
+    );
   }
 }
