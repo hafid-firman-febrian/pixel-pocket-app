@@ -181,7 +181,13 @@ class TransactionsController
     ref.read(transactionsRevisionProvider.notifier).state++;
 
     final current = state.valueOrNull ?? const [];
-    state = AsyncData(current.where((t) => t.id != id).toList(growable: false));
+    state = AsyncData(
+      current
+          .where((t) => t.id != id && t.linkedTransactionId != id)
+          .toList(growable: false),
+    );
+    final fresh = await _loadFirstPage();
+    if (fresh.hasValue) state = fresh;
     return true;
   }
 
@@ -199,25 +205,29 @@ class TransactionsController
     unawaited(ref.read(autoBackupCoordinatorProvider).markDirty());
     ref.read(transactionsRevisionProvider.notifier).state++;
 
+    state = await _loadFirstPage();
+    return !state.hasError;
+  }
+
+  Future<AsyncValue<List<TransactionModel>>> _loadFirstPage() async {
     final range = ref.read(rangeFilterProvider);
     final query = ref.read(transactionSearchProvider).trim();
     _page = 1;
 
     if (query.isNotEmpty) {
       _hasMore = false;
-      state = await AsyncValue.guard(
+      return AsyncValue.guard(
         () async => _filter(await _fetchAllInRange(range), query),
       );
-      return !state.hasError;
     }
 
-    state = await AsyncValue.guard(
+    final result = await AsyncValue.guard(
       () => _service.list(range.toFilter(page: 1, limit: pageSize)),
     );
-    if (!state.hasError) {
-      _hasMore = (state.valueOrNull?.length ?? 0) == pageSize;
+    if (!result.hasError) {
+      _hasMore = (result.valueOrNull?.length ?? 0) == pageSize;
     }
-    return !state.hasError;
+    return result;
   }
 }
 

@@ -108,4 +108,49 @@ void main() {
     final balances = await container.read(accountBalancesProvider.future);
     expect(balances.map((b) => b.balance), [47500, 50000]);
   });
+
+  group('deleting linked rows from the list', () {
+    late int bca;
+    late int dana;
+
+    setUp(() async {
+      bca = await db.into(db.accounts).insert(AccountsCompanion.insert(name: 'BCA'));
+      dana = await db.into(db.accounts).insert(AccountsCompanion.insert(name: 'Dana'));
+      final ok = await container
+          .read(transactionsControllerProvider.notifier)
+          .createTransfer(
+            transactionDate: DateFormat('yyyy-MM-dd').format(DateTime.now()),
+            amount: 50000,
+            fromAccountId: bca,
+            toAccountId: dana,
+            fee: 2500,
+          );
+      expect(ok, isTrue);
+      expect(container.read(transactionsControllerProvider).valueOrNull!.length, 2);
+    });
+
+    test('deleting a transfer also drops its admin fee from the list', () async {
+      final transfer = container
+          .read(transactionsControllerProvider)
+          .valueOrNull!
+          .firstWhere((t) => t.isTransfer);
+
+      await container.read(transactionsControllerProvider.notifier).delete(transfer.id);
+
+      expect(container.read(transactionsControllerProvider).valueOrNull, isEmpty);
+    });
+
+    test('deleting an admin fee clears it from its transfer in the list', () async {
+      final fee = container
+          .read(transactionsControllerProvider)
+          .valueOrNull!
+          .firstWhere((t) => t.isAdminFee);
+
+      await container.read(transactionsControllerProvider.notifier).delete(fee.id);
+
+      final rows = container.read(transactionsControllerProvider).valueOrNull!;
+      expect(rows.single.isTransfer, isTrue);
+      expect(rows.single.feeAmount, isNull);
+    });
+  });
 }
