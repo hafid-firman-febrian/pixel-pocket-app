@@ -10,6 +10,8 @@ import 'package:pixel_pocket/core/theme/app_text_style.dart';
 import 'package:pixel_pocket/core/widgets/pixel_button.dart';
 import 'package:pixel_pocket/core/widgets/pixel_card.dart';
 import 'package:pixel_pocket/core/widgets/pixel_error_view.dart';
+import 'package:pixel_pocket/features/accounts/presentation/screens/widgets/accounts_card.dart';
+import 'package:pixel_pocket/features/accounts/presentation/states/account_state.dart';
 import 'package:pixel_pocket/features/auth/presentation/controllers/auth_controller.dart';
 import 'package:pixel_pocket/features/dashboard/domain/models/category_summary.dart';
 import 'package:pixel_pocket/features/dashboard/domain/models/transaction_summary.dart';
@@ -101,6 +103,10 @@ class DashboardScreen extends ConsumerWidget {
                               ),
                             ),
                           SizedBox(height: AppSpacing.section),
+                          Text('ACCOUNTS', style: AppTextStyles.bodyNormal),
+                          SizedBox(height: AppSpacing.section),
+                          const AccountsCard(),
+                          SizedBox(height: AppSpacing.section),
                           Text(
                             'EXPENSES BY CATEGORY',
                             style: AppTextStyles.bodyNormal,
@@ -132,6 +138,7 @@ class DashboardScreen extends ConsumerWidget {
     ref.invalidate(dashboardSummaryProvider);
     ref.invalidate(expensesByCategoryProvider);
     ref.invalidate(recentTransactionsProvider);
+    ref.invalidate(accountBalancesProvider);
     await ref.read(dashboardSummaryProvider.future);
   }
 }

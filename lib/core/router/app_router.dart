@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:pixel_pocket/core/widgets/pixel_bottom_nav.dart';
+import 'package:pixel_pocket/features/accounts/presentation/screens/account_detail_screen.dart';
 import 'package:pixel_pocket/features/chart/presentation/screens/chart_screen.dart';
 import 'package:pixel_pocket/features/dashboard/presentation/screens/dashboard_screen.dart';
 import 'package:pixel_pocket/features/settings/presentation/screens/settings_screen.dart';
@@ -30,6 +31,8 @@ class AppRoutes {
   static const String chart = '/chart';
   static const String settings = '/settings';
   static const String salaryPeriods = '/settings/salary-periods';
+  static const String accountDetail = '/accounts/:id';
+  static String accountDetailPath(int id) => '/accounts/$id';
 }
 
 const _navItems = [
@@ -111,6 +114,12 @@ final routerProvider = Provider<GoRouter>((ref) {
 
         builder: (context, state) => ForgotPinScreen(
           onSuccess: () => ref.read(authControllerProvider.notifier).unlock(),
+        ),
+      ),
+      GoRoute(
+        path: AppRoutes.accountDetail,
+        builder: (context, state) => AccountDetailScreen(
+          accountId: int.parse(state.pathParameters['id']!),
         ),
       ),
       StatefulShellRoute.indexedStack(
