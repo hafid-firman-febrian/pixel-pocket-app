@@ -1,5 +1,5 @@
 import 'package:drift/native.dart';
-import 'package:drift/drift.dart';
+import 'package:drift/drift.dart' hide isNull;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:pixel_pocket/core/database/app_database.dart';
 import 'package:pixel_pocket/core/error/failure.dart';
@@ -18,6 +18,12 @@ void main() {
       CategoriesCompanion.insert(
         id: const Value(1), name: 'Food', color: const Value('#abcdef'), type: 'expense',
       ),
+    );
+    await db.into(db.accounts).insert(
+      AccountsCompanion.insert(id: const Value(1), name: 'BCA'),
+    );
+    await db.into(db.accounts).insert(
+      AccountsCompanion.insert(id: const Value(2), name: 'Dana'),
     );
   });
   tearDown(() => db.close());
@@ -100,5 +106,121 @@ void main() {
     expect(u.amount, 99);
     await dao.delete(c.id);
     expect(await dao.getAll(const TransactionFilter(limit: 20)), isEmpty);
+  });
+
+  group('accounts and transfers', () {
+    TransactionModel transfer({
+      int id = 0,
+      double amount = 50000,
+      int from = 1,
+      int to = 2,
+      String date = '2026-07-01',
+    }) =>
+        TransactionModel(
+          id: id,
+          transactionDate: date,
+          transactionType: 'transfer',
+          amount: amount,
+          accountId: from,
+          toAccountId: to,
+        );
+
+    Future<List<Transaction>> rows() => db.select(db.transactions).get();
+
+    test('create stores the account and getAll joins its name', () async {
+      await dao.create(const TransactionModel(
+        id: 0, transactionDate: '2026-07-01', transactionType: 'expense',
+        amount: 10, categoryId: 1, accountId: 2,
+      ));
+      final t = (await dao.getAll(const TransactionFilter())).single;
+      expect(t.accountId, 2);
+      expect(t.accountName, 'Dana');
+    });
+
+    test('update can change the account', () async {
+      final c = await dao.create(const TransactionModel(
+        id: 0, transactionDate: '2026-07-01', transactionType: 'expense',
+        amount: 10, categoryId: 1, accountId: 1,
+      ));
+      final u = await dao.update(TransactionModel(
+        id: c.id, transactionDate: c.transactionDate, transactionType: 'expense',
+        amount: 10, categoryId: 1, accountId: 2,
+      ));
+      expect(u.accountName, 'Dana');
+    });
+
+    test('createTransfer with a fee writes a linked Admin Fee expense', () async {
+      final created = await dao.createTransfer(transfer(), fee: 2500);
+      expect(created.isTransfer, isTrue);
+      expect(created.accountName, 'BCA');
+      expect(created.toAccountName, 'Dana');
+      expect(created.feeAmount, 2500);
+
+      final fee = (await rows()).singleWhere((r) => r.linkedTransactionId == created.id);
+      expect(fee.transactionType, 'expense');
+      expect(fee.amount, 2500);
+      expect(fee.accountId, 1);
+      expect(fee.categoryId, await db.adminFeeCategoryId());
+    });
+
+    test('createTransfer without a fee writes only the transfer', () async {
+      final created = await dao.createTransfer(transfer());
+      expect(created.feeAmount, isNull);
+      expect((await rows()).length, 1);
+    });
+
+    test('createTransfer rolls back the transfer when the fee cannot be written', () async {
+      await db.customStatement('DROP TABLE categories');
+      await expectLater(dao.createTransfer(transfer(), fee: 2500), throwsA(anything));
+      expect(await rows(), isEmpty);
+    });
+
+    test('updateTransfer adds, changes and removes the fee', () async {
+      final created = await dao.createTransfer(transfer());
+
+      var updated = await dao.updateTransfer(transfer(id: created.id), fee: 2500);
+      expect(updated.feeAmount, 2500);
+
+      updated = await dao.updateTransfer(
+        transfer(id: created.id, amount: 70000, from: 2, to: 1, date: '2026-07-09'),
+        fee: 1000,
+      );
+      expect(updated.amount, 70000);
+      expect(updated.accountName, 'Dana');
+      expect(updated.feeAmount, 1000);
+      final fee = (await rows()).singleWhere((r) => r.linkedTransactionId == created.id);
+      expect(fee.accountId, 2);
+      expect(fee.transactionDate, '2026-07-09');
+
+      updated = await dao.updateTransfer(transfer(id: created.id), fee: 0);
+      expect(updated.feeAmount, isNull);
+      expect((await rows()).length, 1);
+    });
+
+    test('deleting a transfer deletes its fee', () async {
+      final created = await dao.createTransfer(transfer(), fee: 2500);
+      await dao.delete(created.id);
+      expect(await rows(), isEmpty);
+    });
+
+    test('accountId filter matches the source and the destination', () async {
+      await dao.create(const TransactionModel(
+        id: 0, transactionDate: '2026-07-01', transactionType: 'expense',
+        amount: 10, categoryId: 1, accountId: 1,
+      ));
+      await dao.createTransfer(transfer(), fee: 2500);
+
+      final bca = await dao.getAll(const TransactionFilter(accountId: 1));
+      final dana = await dao.getAll(const TransactionFilter(accountId: 2));
+      expect(bca.length, 3);
+      expect(dana.map((t) => t.transactionType), ['transfer']);
+    });
+
+    test('getById returns the joined row', () async {
+      final created = await dao.createTransfer(transfer(), fee: 2500);
+      final loaded = await dao.getById(created.id);
+      expect(loaded.toAccountName, 'Dana');
+      expect(loaded.feeAmount, 2500);
+    });
   });
 }

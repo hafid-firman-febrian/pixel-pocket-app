@@ -5,6 +5,7 @@ class TransactionFilter {
   final String? endDate;
   final String? transactionType;
   final int? categoryId;
+  final int? accountId;
   final int page;
   final int limit;
 
@@ -15,6 +16,7 @@ class TransactionFilter {
     this.endDate,
     this.transactionType,
     this.categoryId,
+    this.accountId,
     this.page = 1,
     this.limit = 20,
   });
@@ -30,6 +32,8 @@ class TransactionFilter {
     bool clearTransactionType = false,
     int? categoryId,
     bool clearCategoryId = false,
+    int? accountId,
+    bool clearAccountId = false,
     int? page,
     int? limit,
   }) {
@@ -44,6 +48,7 @@ class TransactionFilter {
           ? null
           : (transactionType ?? this.transactionType),
       categoryId: clearCategoryId ? null : (categoryId ?? this.categoryId),
+      accountId: clearAccountId ? null : (accountId ?? this.accountId),
       page: page ?? this.page,
       limit: limit ?? this.limit,
     );
@@ -58,6 +63,7 @@ class TransactionFilter {
       other.endDate == endDate &&
       other.transactionType == transactionType &&
       other.categoryId == categoryId &&
+      other.accountId == accountId &&
       other.page == page &&
       other.limit == limit;
 
@@ -69,6 +75,7 @@ class TransactionFilter {
     endDate,
     transactionType,
     categoryId,
+    accountId,
     page,
     limit,
   );
