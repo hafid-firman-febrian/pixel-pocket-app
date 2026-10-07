@@ -17,6 +17,7 @@ class AppColors {
   static const subscription = Color(0xFF7B6D8D); // muted purple
   static const transport = Color(0xFF4A7C8C); // dark teal
   static const other = Color(0xFF8C8C7B); // warm gray
+  static const adminFee = Color(0xFF8C6B6B);
 
   // ---- Income category colors (from seed) ----
   static const salary = Color(0xFF6B8C5F); // muted green

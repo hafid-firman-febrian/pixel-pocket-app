@@ -1,5 +1,8 @@
 typedef DefaultCategory = ({String name, String color, String type});
 
+const String adminFeeCategoryName = 'Admin Fee';
+const String adminFeeCategoryColor = '#8C6B6B';
+
 const List<DefaultCategory> defaultCategories = [
   (name: 'Groceries', color: '#7D9B76', type: 'expense'),
   (name: 'Beverage', color: '#5F8A8B', type: 'expense'),
@@ -19,4 +22,5 @@ const List<DefaultCategory> defaultCategories = [
   (name: 'Investment', color: '#8C7A3D', type: 'income'),
   (name: 'Bonus', color: '#8C5B3D', type: 'income'),
   (name: 'Other Income', color: '#7A8C6B', type: 'income'),
+  (name: adminFeeCategoryName, color: adminFeeCategoryColor, type: 'expense'),
 ];

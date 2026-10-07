@@ -30,6 +30,20 @@ class Transactions extends Table {
   TextColumn get description => text().nullable()();
   TextColumn get createdAt => text().nullable()();
   TextColumn get updatedAt => text().nullable()();
+  IntColumn get accountId => integer().nullable()();
+  IntColumn get toAccountId => integer().nullable()();
+  IntColumn get linkedTransactionId => integer().nullable()();
+
+  @override
+  Set<Column> get primaryKey => {id};
+}
+
+class Accounts extends Table {
+  IntColumn get id => integer()();
+  TextColumn get name => text()();
+  TextColumn get color => text().nullable()();
+  RealColumn get openingBalance => real().withDefault(const Constant(0.0))();
+  BoolColumn get isArchived => boolean().withDefault(const Constant(false))();
 
   @override
   Set<Column> get primaryKey => {id};

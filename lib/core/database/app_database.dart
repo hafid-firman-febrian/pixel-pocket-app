@@ -11,14 +11,32 @@ import 'tables.dart';
 
 part 'app_database.g.dart';
 
-@DriftDatabase(tables: [Categories, SalaryPeriods, Transactions])
+@DriftDatabase(tables: [Categories, SalaryPeriods, Transactions, Accounts])
 class AppDatabase extends _$AppDatabase {
   AppDatabase() : super(_openConnection());
 
   AppDatabase.forTesting(super.e);
 
   @override
-  int get schemaVersion => 1;
+  int get schemaVersion => 2;
+
+  @override
+  MigrationStrategy get migration => MigrationStrategy(
+        onCreate: (m) => m.createAll(),
+        onUpgrade: (m, from, to) async {
+          if (from < 2) {
+            await m.createTable(accounts);
+            await m.addColumn(transactions, transactions.accountId);
+            await m.addColumn(transactions, transactions.toAccountId);
+            await m.addColumn(transactions, transactions.linkedTransactionId);
+            final hasCategories =
+                (await (select(categories)..limit(1)).get()).isNotEmpty;
+            if (hasCategories) {
+              await adminFeeCategoryId();
+            }
+          }
+        },
+      );
 
   Future<void> seedDefaultCategoriesIfEmpty() async {
     final count = await customSelect(
@@ -43,13 +61,33 @@ class AppDatabase extends _$AppDatabase {
     });
   }
 
+  Future<int> adminFeeCategoryId() async {
+    final existing = await (select(categories)
+          ..where(
+            (c) =>
+                c.name.equals(adminFeeCategoryName) & c.type.equals('expense'),
+          )
+          ..limit(1))
+        .getSingleOrNull();
+    if (existing != null) return existing.id;
+    return into(categories).insert(
+      CategoriesCompanion.insert(
+        name: adminFeeCategoryName,
+        color: const Value(adminFeeCategoryColor),
+        type: 'expense',
+      ),
+    );
+  }
+
   Future<void> replaceAll({
     required List<CategoriesCompanion> categories,
     required List<SalaryPeriodsCompanion> salaryPeriods,
     required List<TransactionsCompanion> transactions,
+    List<AccountsCompanion> accounts = const [],
   }) async {
     await transaction(() async {
       await delete(this.transactions).go();
+      await delete(this.accounts).go();
       await delete(this.salaryPeriods).go();
       await delete(this.categories).go();
       await batch((b) {
@@ -64,6 +102,11 @@ class AppDatabase extends _$AppDatabase {
           mode: InsertMode.insertOrReplace,
         );
         b.insertAll(
+          this.accounts,
+          accounts,
+          mode: InsertMode.insertOrReplace,
+        );
+        b.insertAll(
           this.transactions,
           transactions,
           mode: InsertMode.insertOrReplace,
@@ -75,6 +118,7 @@ class AppDatabase extends _$AppDatabase {
   Future<void> wipeAllData() async {
     await transaction(() async {
       await delete(transactions).go();
+      await delete(accounts).go();
       await delete(salaryPeriods).go();
       await delete(categories).go();
       await seedDefaultCategoriesIfEmpty();

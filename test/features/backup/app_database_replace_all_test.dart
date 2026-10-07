@@ -64,4 +64,39 @@ void main() {
     expect(tx.categoryId, 7);
     expect((await db.select(db.salaryPeriods).getSingle()).id, 3);
   });
+
+  test('replaceAll also wipes and rewrites accounts', () async {
+    await db
+        .into(db.accounts)
+        .insert(AccountsCompanion.insert(id: const Value(1), name: 'Old'));
+
+    await db.replaceAll(
+      categories: const [],
+      salaryPeriods: const [],
+      accounts: [
+        AccountsCompanion.insert(
+          id: const Value(4),
+          name: 'Dana',
+          openingBalance: const Value(50000),
+        ),
+      ],
+      transactions: [
+        TransactionsCompanion.insert(
+          id: const Value(9),
+          transactionDate: '2026-07-01',
+          transactionType: 'transfer',
+          amount: 10000,
+          accountId: const Value(4),
+          toAccountId: const Value(5),
+        ),
+      ],
+    );
+
+    final accounts = await db.select(db.accounts).get();
+    expect(accounts.map((a) => a.id), [4]);
+    expect(accounts.single.openingBalance, 50000);
+    final tx = await db.select(db.transactions).getSingle();
+    expect(tx.accountId, 4);
+    expect(tx.toAccountId, 5);
+  });
 }
