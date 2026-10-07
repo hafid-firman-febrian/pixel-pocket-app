@@ -103,7 +103,10 @@ class DashboardScreen extends ConsumerWidget {
                               ),
                             ),
                           SizedBox(height: AppSpacing.section),
-                          Text('ACCOUNTS', style: AppTextStyles.bodyNormal),
+                          Text(
+                            'ACCOUNTS · CURRENT BALANCE',
+                            style: AppTextStyles.bodyNormal,
+                          ),
                           SizedBox(height: AppSpacing.section),
                           const AccountsCard(),
                           SizedBox(height: AppSpacing.section),
