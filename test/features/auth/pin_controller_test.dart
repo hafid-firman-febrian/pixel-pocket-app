@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:pixel_pocket/features/accounts/presentation/states/account_state.dart';
 import 'package:pixel_pocket/features/auth/application/services/pin_reset_service.dart';
 import 'package:pixel_pocket/features/auth/application/services/pin_service.dart';
 import 'package:pixel_pocket/features/auth/data/datasources/pin_local_data_source.dart';
@@ -65,6 +66,9 @@ ProviderContainer _makeContainer(_FakePinResetService resetService) {
       expensesByCategoryProvider.overrideWith((ref) => Future.value([])),
       recentTransactionsProvider.overrideWith((ref) => Future.value([])),
       salaryPeriodProvider.overrideWith((ref) => Future.value([])),
+      accountsProvider.overrideWith((ref) => Future.value([])),
+      accountBalancesProvider.overrideWith((ref) => Future.value([])),
+      lastUsedAccountIdProvider.overrideWith((ref, transfer) => Future.value(null)),
     ],
   );
   addTearDown(container.dispose);

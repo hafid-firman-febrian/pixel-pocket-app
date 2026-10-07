@@ -1,10 +1,12 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:pixel_pocket/features/accounts/presentation/states/account_state.dart';
 import 'package:pixel_pocket/features/auth/application/services/pin_reset_service.dart';
 import 'package:pixel_pocket/features/auth/application/services/pin_service.dart';
 import 'package:pixel_pocket/features/categories/presentation/states/category_state.dart';
 import 'package:pixel_pocket/features/dashboard/presentation/states/dashboard_state.dart';
 import 'package:pixel_pocket/features/salary_period/presentation/states/salary_period_state.dart';
 import 'package:pixel_pocket/features/transactions/presentation/controllers/transaction_controller.dart';
+import 'package:pixel_pocket/features/transactions/presentation/states/transaction_state.dart';
 
 /// Owns the local PIN status and exposes set/verify/clear.
 ///
@@ -60,5 +62,9 @@ class PinController extends Notifier<bool?> {
     ref.invalidate(expensesByCategoryProvider);
     ref.invalidate(recentTransactionsProvider);
     ref.invalidate(salaryPeriodProvider);
+    ref.invalidate(accountsProvider);
+    ref.invalidate(accountBalancesProvider);
+    ref.invalidate(lastUsedAccountIdProvider);
+    ref.read(transactionsRevisionProvider.notifier).state++;
   }
 }
