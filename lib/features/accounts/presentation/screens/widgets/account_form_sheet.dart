@@ -2,37 +2,40 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:pixel_pocket/core/error/failure.dart';
 import 'package:pixel_pocket/core/theme/app_spacing.dart';
+import 'package:pixel_pocket/core/theme/app_text_style.dart';
+import 'package:pixel_pocket/core/utils/currency_formatter.dart';
+import 'package:pixel_pocket/core/utils/thousands_input_formatter.dart';
 import 'package:pixel_pocket/core/widgets/pixel_bottom_sheet.dart';
 import 'package:pixel_pocket/core/widgets/pixel_button.dart';
 import 'package:pixel_pocket/core/widgets/pixel_color_picker.dart';
 import 'package:pixel_pocket/core/widgets/pixel_field_label.dart';
 import 'package:pixel_pocket/core/widgets/pixel_snack_bar.dart';
-import 'package:pixel_pocket/features/categories/domain/models/category_model.dart';
-import 'package:pixel_pocket/features/categories/presentation/controllers/category_controller.dart';
+import 'package:pixel_pocket/features/accounts/domain/models/account_model.dart';
+import 'package:pixel_pocket/features/accounts/presentation/controllers/account_controller.dart';
 
-class CategoryFormSheet extends ConsumerStatefulWidget {
-  const CategoryFormSheet({super.key, this.existing});
+class AccountFormSheet extends ConsumerStatefulWidget {
+  const AccountFormSheet({super.key, this.existing});
 
-  final CategoryModel? existing;
+  final AccountModel? existing;
 
   bool get isEditing => existing != null;
 
-  static Future<bool?> show(BuildContext context, {CategoryModel? existing}) {
+  static Future<bool?> show(BuildContext context, {AccountModel? existing}) {
     return showPixelBottomSheet<bool>(
       context: context,
-      builder: (_) => CategoryFormSheet(existing: existing),
+      builder: (_) => AccountFormSheet(existing: existing),
     );
   }
 
   @override
-  ConsumerState<CategoryFormSheet> createState() => _CategoryFormSheetState();
+  ConsumerState<AccountFormSheet> createState() => _AccountFormSheetState();
 }
 
-class _CategoryFormSheetState extends ConsumerState<CategoryFormSheet> {
+class _AccountFormSheetState extends ConsumerState<AccountFormSheet> {
   final _formKey = GlobalKey<FormState>();
   final _nameController = TextEditingController();
+  late final TextEditingController _openingController;
 
-  late String _type;
   late String _color;
   bool _saving = false;
 
@@ -40,14 +43,18 @@ class _CategoryFormSheetState extends ConsumerState<CategoryFormSheet> {
   void initState() {
     super.initState();
     final existing = widget.existing;
-    _type = existing?.type ?? 'expense';
-    _color = existing?.color ?? pixelColorPalette.first;
     _nameController.text = existing?.name ?? '';
+    _color = existing?.color ?? pixelColorPalette.first;
+    final opening = existing?.openingBalance ?? 0;
+    _openingController = TextEditingController(
+      text: opening > 0 ? CurrencyFormatter.input(opening) : '0',
+    );
   }
 
   @override
   void dispose() {
     _nameController.dispose();
+    _openingController.dispose();
     super.dispose();
   }
 
@@ -55,8 +62,9 @@ class _CategoryFormSheetState extends ConsumerState<CategoryFormSheet> {
     if (!_formKey.currentState!.validate()) return;
     setState(() => _saving = true);
     final messenger = ScaffoldMessenger.of(context);
-    final controller = ref.read(categoryControllerProvider);
+    final controller = ref.read(accountControllerProvider);
     final name = _nameController.text.trim();
+    final opening = CurrencyFormatter.parse(_openingController.text);
     try {
       final existing = widget.existing;
       if (existing != null) {
@@ -64,17 +72,21 @@ class _CategoryFormSheetState extends ConsumerState<CategoryFormSheet> {
           id: existing.id,
           name: name,
           color: _color,
-          type: _type,
+          openingBalance: opening,
         );
       } else {
-        await controller.create(name: name, color: _color, type: _type);
+        await controller.create(
+          name: name,
+          color: _color,
+          openingBalance: opening,
+        );
       }
       if (!mounted) return;
       Navigator.of(context).pop(true);
     } catch (e) {
       if (!mounted) return;
       setState(() => _saving = false);
-      final message = e is Failure ? e.message : 'Failed to save category';
+      final message = e is Failure ? e.message : 'Failed to save account';
       messenger.showPixelSnackBar(message, isError: true);
     }
   }
@@ -82,7 +94,7 @@ class _CategoryFormSheetState extends ConsumerState<CategoryFormSheet> {
   @override
   Widget build(BuildContext context) {
     return PixelBottomSheetFrame(
-      title: widget.isEditing ? 'EDIT CATEGORY' : 'NEW CATEGORY',
+      title: widget.isEditing ? 'EDIT ACCOUNT' : 'NEW ACCOUNT',
       child: SingleChildScrollView(
         padding: AppSpacing.form,
         child: Form(
@@ -99,28 +111,26 @@ class _CategoryFormSheetState extends ConsumerState<CategoryFormSheet> {
                     (v == null || v.trim().isEmpty) ? 'Enter a name' : null,
               ),
               const SizedBox(height: AppSpacing.section),
-
-              const PixelFieldLabel('TYPE'),
-              Row(
-                children: [
-                  _typeButton('expense', 'EXPENSE', PixelButtonVariant.expense),
-                  const SizedBox(width: AppSpacing.s8),
-                  _typeButton('income', 'INCOME', PixelButtonVariant.income),
-                  const SizedBox(width: AppSpacing.s8),
-                  _typeButton('both', 'BOTH', PixelButtonVariant.primary),
-                ],
+              const PixelFieldLabel('OPENING BALANCE'),
+              TextFormField(
+                controller: _openingController,
+                keyboardType: TextInputType.number,
+                inputFormatters: const [ThousandsInputFormatter()],
+                style: AppTextStyles.numericMd,
+                decoration: const InputDecoration(
+                  prefixText: 'Rp ',
+                  isDense: true,
+                ),
               ),
               const SizedBox(height: AppSpacing.section),
-
               const PixelFieldLabel('COLOR'),
               PixelColorPicker(
                 selected: _color,
                 onChanged: (hex) => setState(() => _color = hex),
               ),
               const SizedBox(height: AppSpacing.s24),
-
               PixelButton(
-                label: widget.isEditing ? 'SAVE CHANGES' : 'SAVE CATEGORY',
+                label: widget.isEditing ? 'SAVE CHANGES' : 'SAVE ACCOUNT',
                 isFullWidth: true,
                 isLoading: _saving,
                 onPressed: _saving ? null : _submit,
@@ -135,19 +145,6 @@ class _CategoryFormSheetState extends ConsumerState<CategoryFormSheet> {
             ],
           ),
         ),
-      ),
-    );
-  }
-
-  Widget _typeButton(String value, String label, PixelButtonVariant variant) {
-    final selected = _type == value;
-    return Expanded(
-      child: PixelButton(
-        label: label,
-        isFullWidth: true,
-        variant: selected ? variant : PixelButtonVariant.surface,
-        pressed: selected,
-        onPressed: () => setState(() => _type = value),
       ),
     );
   }

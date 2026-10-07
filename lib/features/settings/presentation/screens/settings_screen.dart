@@ -11,6 +11,11 @@ import 'package:pixel_pocket/core/widgets/pixel_chip.dart';
 import 'package:pixel_pocket/core/widgets/pixel_confirm_dialog.dart';
 import 'package:pixel_pocket/core/widgets/pixel_error_view.dart';
 import 'package:pixel_pocket/core/widgets/pixel_snack_bar.dart';
+import 'package:pixel_pocket/features/accounts/application/services/account_service.dart';
+import 'package:pixel_pocket/features/accounts/domain/models/account_model.dart';
+import 'package:pixel_pocket/features/accounts/presentation/controllers/account_controller.dart';
+import 'package:pixel_pocket/features/accounts/presentation/screens/widgets/account_form_sheet.dart';
+import 'package:pixel_pocket/features/accounts/presentation/states/account_state.dart';
 import 'package:pixel_pocket/features/auth/presentation/controllers/pin_controller.dart';
 import 'package:pixel_pocket/features/backup/presentation/screens/widgets/backup_section.dart';
 import 'package:pixel_pocket/features/categories/domain/models/category_model.dart';
@@ -73,6 +78,8 @@ class SettingsScreen extends ConsumerWidget {
                         const _SalaryPeriodSection(),
                         const SizedBox(height: AppSpacing.section),
                         const _CategorySection(),
+                        const SizedBox(height: AppSpacing.section),
+                        const _AccountSection(),
                         const SizedBox(height: AppSpacing.section),
                         const _SectionLabel('BACKUP'),
                         const BackupSection(),
@@ -363,6 +370,143 @@ class _CategorySection extends ConsumerWidget {
       messenger.showPixelSnackBar('Category deleted');
     } catch (_) {
       messenger.showPixelSnackBar('Failed to delete', isError: true);
+    }
+  }
+}
+
+class _AccountSection extends ConsumerWidget {
+  const _AccountSection();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final async = ref.watch(accountsProvider);
+    return _DataCard(
+      label: 'ACCOUNTS',
+      addLabel: 'Add Account',
+      onAdd: () => _open(context),
+      child: async.when(
+        loading: () => const _ChipsLoading(),
+        error: (e, _) => PixelErrorView(
+          failure: asFailure(e),
+          onRetry: () => ref.invalidate(accountsProvider),
+          compact: true,
+        ),
+        data: (accounts) => accounts.isEmpty
+            ? const _EmptyHint('No accounts yet')
+            : _chips(context, ref, accounts),
+      ),
+    );
+  }
+
+  Widget _chips(
+    BuildContext context,
+    WidgetRef ref,
+    List<AccountModel> accounts,
+  ) {
+    final active = accounts.where((a) => !a.isArchived).toList();
+    final archived = accounts.where((a) => a.isArchived).toList();
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        if (active.isNotEmpty)
+          Wrap(
+            spacing: AppSpacing.s8,
+            runSpacing: AppSpacing.s8,
+            children: [
+              for (final a in active)
+                PixelChip(
+                  label: a.name,
+                  leadingColor: AppColors.fromHex(a.color),
+                  onTap: () => _open(context, existing: a),
+                  onDelete: () => _remove(context, ref, a),
+                ),
+            ],
+          ),
+        if (archived.isNotEmpty) ...[
+          if (active.isNotEmpty) const SizedBox(height: AppSpacing.s12),
+          const _SectionLabel('ARCHIVED'),
+          Wrap(
+            spacing: AppSpacing.s8,
+            runSpacing: AppSpacing.s8,
+            children: [
+              for (final a in archived)
+                Opacity(
+                  opacity: 0.5,
+                  child: PixelChip(
+                    label: a.name,
+                    leadingColor: AppColors.fromHex(a.color),
+                    onTap: () => _unarchive(context, ref, a),
+                  ),
+                ),
+            ],
+          ),
+        ],
+      ],
+    );
+  }
+
+  Future<void> _open(BuildContext context, {AccountModel? existing}) async {
+    final messenger = ScaffoldMessenger.of(context);
+    final saved = await AccountFormSheet.show(context, existing: existing);
+    if (saved == true) {
+      messenger.showPixelSnackBar(
+        existing == null ? 'Account created' : 'Account updated',
+      );
+    }
+  }
+
+  Future<void> _remove(
+    BuildContext context,
+    WidgetRef ref,
+    AccountModel account,
+  ) async {
+    final messenger = ScaffoldMessenger.of(context);
+    final controller = ref.read(accountControllerProvider);
+    final used = await controller.hasTransactions(account.id);
+    if (!context.mounted) return;
+    final confirmed = await showPixelConfirm(
+      context,
+      title: used ? 'Archive account?' : 'Delete account?',
+      message: used
+          ? '"${account.name}" has transactions, so it will be archived '
+              'and hidden from new transactions.'
+          : '"${account.name}" will be removed.',
+      confirmLabel: used ? 'Archive' : 'Delete',
+      confirmVariant: PixelButtonVariant.danger,
+      icon: used ? Pixel.archive : Pixel.trash,
+    );
+    if (!confirmed) return;
+    try {
+      final result = await controller.remove(account.id);
+      messenger.showPixelSnackBar(
+        result == AccountRemoval.archived
+            ? 'Account archived'
+            : 'Account deleted',
+      );
+    } catch (_) {
+      messenger.showPixelSnackBar('Failed to remove account', isError: true);
+    }
+  }
+
+  Future<void> _unarchive(
+    BuildContext context,
+    WidgetRef ref,
+    AccountModel account,
+  ) async {
+    final messenger = ScaffoldMessenger.of(context);
+    final confirmed = await showPixelConfirm(
+      context,
+      title: 'Unarchive account?',
+      message: '"${account.name}" will be available for new transactions again.',
+      confirmLabel: 'Unarchive',
+      icon: Pixel.archive,
+    );
+    if (!confirmed) return;
+    try {
+      await ref.read(accountControllerProvider).unarchive(account.id);
+      messenger.showPixelSnackBar('Account restored');
+    } catch (_) {
+      messenger.showPixelSnackBar('Failed to restore account', isError: true);
     }
   }
 }
