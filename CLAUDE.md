@@ -57,7 +57,7 @@ Tidak semua feature butuh 4 lapisan. Kondisi nyatanya:
 
 | Feature | `data` | `domain` | `application` | `presentation` |
 |---|:---:|:---:|:---:|:---:|
-| `transactions`, `categories`, `salary_period`, `chart`, `dashboard`, `auth` | ✓ | ✓ | ✓ | ✓ |
+| `transactions`, `categories`, `salary_period`, `chart`, `dashboard`, `auth`, `accounts` | ✓ | ✓ | ✓ | ✓ |
 | `backup` | ✓ | — | ✓ | ✓ |
 | `settings` | — | — | — | ✓ |
 
@@ -78,9 +78,9 @@ lib/
 │   ├── cache/
 │   │   └── cache_store.dart        ← wrapper shared_preferences (metadata lokal, bukan cache API)
 │   ├── database/
-│   │   ├── app_database.dart       ← Drift database + DAO registrations (schemaVersion 1)
-│   │   ├── tables.dart             ← definisi tabel: Categories, SalaryPeriods, Transactions
-│   │   └── default_categories.dart ← seed 18 kategori default
+│   │   ├── app_database.dart       ← Drift database + DAO registrations (schemaVersion 2, migrasi v1→v2)
+│   │   ├── tables.dart             ← definisi tabel: Categories, SalaryPeriods, Transactions, Accounts
+│   │   └── default_categories.dart ← seed 19 kategori default (termasuk Admin Fee)
 │   ├── error/
 │   │   └── failure.dart
 │   ├── router/
@@ -97,8 +97,9 @@ lib/
 │   └── widgets/                    ← komponen pixel dipakai lintas-feature
 │       ├── pixel_card.dart
 │       ├── pixel_button.dart
-│       └── …                       ← chip, bottom nav, bottom sheet, confirm dialog, error view
+│       └── …                       ← chip, bottom nav, bottom sheet, color picker, confirm dialog, error view
 ├── features/
+│   ├── accounts/       ← rekening: saldo, transfer, adjust balance
 │   ├── auth/           ← PIN lock (local app lock) + Google sign-in (untuk backup)
 │   ├── backup/         ← Google Sheets backup/restore + auto-backup
 │   ├── categories/
@@ -123,30 +124,26 @@ Semua domain model adalah entity murni — tidak ada `fromJson`/`toJson`. DAO me
 class TransactionModel {
   final int id;
   final String transactionDate;
-  final String transactionType;  // 'income' | 'expense'
-  final double amount;
+  final String transactionType;  // 'income' | 'expense' | 'transfer' | 'adjustment'
+  final double amount;           // positif, kecuali 'adjustment' (bertanda)
   final int? categoryId;
   final String? description;
   final String? categoryName;    // hasil join ke categories
   final String? categoryColor;   // hex '#RRGGBB', hasil join ke categories
+  final int? accountId;          // rekening; untuk transfer = rekening asal
+  final String? accountName;     // hasil join ke accounts
+  final int? toAccountId;        // rekening tujuan (hanya transfer)
+  final String? toAccountName;   // hasil join ke accounts
+  final int? linkedTransactionId; // diisi di baris biaya admin → id transfernya
+  final double? feeAmount;       // biaya admin tertaut (hanya di transfer)
   final String? createdAt;
   final String? updatedAt;
 
-  const TransactionModel({
-    required this.id,
-    required this.transactionDate,
-    required this.transactionType,
-    required this.amount,
-    this.categoryId,
-    this.description,
-    this.categoryName,
-    this.categoryColor,
-    this.createdAt,
-    this.updatedAt,
-  });
-
   bool get isIncome => transactionType == 'income';
   bool get isExpense => transactionType == 'expense';
+  bool get isTransfer => transactionType == 'transfer';
+  bool get isAdjustment => transactionType == 'adjustment';
+  bool get isAdminFee => linkedTransactionId != null;
 }
 ```
 
@@ -157,8 +154,9 @@ class TransactionFilter {
   final String? filter;        // 'week' | 'month' | 'year' | 'custom'
   final String? startDate;     // 'YYYY-MM-DD', wajib jika filter == 'custom'
   final String? endDate;       // 'YYYY-MM-DD', wajib jika filter == 'custom'
-  final String? transactionType; // 'income' | 'expense'
+  final String? transactionType; // 'income' | 'expense' | 'transfer' | 'adjustment'
   final int? categoryId;
+  final int? accountId;        // cocok bila rekening asal ATAU tujuan = id ini
   final int page;
   final int limit;
 
@@ -169,9 +167,42 @@ class TransactionFilter {
     this.endDate,
     this.transactionType,
     this.categoryId,
+    this.accountId,
     this.page = 1,
     this.limit = 20,
   });
+}
+```
+
+### AccountModel
+```dart
+class AccountModel {
+  final int id;
+  final String name;
+  final String? color;          // hex '#RRGGBB'
+  final double openingBalance;  // saldo saat rekening dibuat
+  final bool isArchived;        // diarsipkan bila dihapus tapi masih punya transaksi
+}
+```
+
+### AccountBalance
+```dart
+class AccountBalance {
+  final AccountModel account;
+  final double balance;  // opening + income − expense − transfer keluar + transfer masuk + adjustment
+}
+```
+
+### AccountExpense (chart — pengeluaran per rekening)
+```dart
+class AccountExpense {
+  final int? accountId;  // null = transaksi sebelum fitur rekening ("No account")
+  final String name;
+  final String? colorHex;
+  final double total;
+  final double percentage;
+
+  bool get hasAccount => accountId != null;
 }
 ```
 
@@ -385,6 +416,7 @@ AppColors.selfcare      // 0xFFA0856C — sand
 AppColors.subscription  // 0xFF7B6D8D — muted purple
 AppColors.transport     // 0xFF4A7C8C — dark teal
 AppColors.other         // 0xFF8C8C7B — warm gray
+AppColors.adminFee      // 0xFF8C6B6B — biaya admin transfer
 // Income
 AppColors.salary        // 0xFF6B8C5F — muted green
 AppColors.freelance     // 0xFF5B7A8C — dusty blue
@@ -411,5 +443,8 @@ AppColors.fromHex(category.color); // null/invalid → fallback ke AppColors.oth
 | `startDate` / `endDate` | `YYYY-MM-DD` | Wajib jika `filter == 'custom'` |
 | `transactionType` | `income` \| `expense` | |
 | `categoryId` | `int?` | Filter transaksi per kategori |
+| `accountId` | `int?` | Cocok bila rekening asal **atau** tujuan = id ini |
+
+`transactionType` punya 4 nilai: `income`, `expense`, `transfer` (`account_id` = asal, `to_account_id` = tujuan), dan `adjustment` (amount bertanda, dari Adjust balance). Summary, chart, dan breakdown kategori hanya menghitung `income`/`expense`. Biaya admin transfer = baris `expense` kategori Admin Fee dengan `linked_transaction_id` ke transfernya; dibuat, diubah, dan dihapus bersama transfer di `TransactionDao`.
 
 Catatan: kalau `salaryPeriodId` tidak match periode manapun, `TransactionDao`/`SummaryDao` fallback ke *unfiltered*, sedangkan `ChartDao` fallback ke bulan berjalan — perilaku ini masih divergen antar DAO, belum disamakan.

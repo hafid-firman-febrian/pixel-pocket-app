@@ -62,7 +62,7 @@ void main() {
     await repo.wipeAll();
 
     expect(await db.select(db.transactions).get(), isEmpty);
-    expect((await db.select(db.categories).get()).length, 18);
+    expect((await db.select(db.categories).get()).length, 19);
     expect(pinLocal.stored, isNull);
   });
 
