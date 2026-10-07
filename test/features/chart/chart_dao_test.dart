@@ -61,4 +61,37 @@ void main() {
     expect(data.income[i10], 500);
     expect(data.expense[i10], 200);
   });
+
+  test('expense by account follows the range and keeps legacy rows as No account',
+      () async {
+    final bca = await db.into(db.accounts).insert(
+        AccountsCompanion.insert(name: 'BCA', color: const Value('#123456')));
+    final gopay = await db.into(db.accounts).insert(AccountsCompanion.insert(name: 'GoPay'));
+    Future<void> add(String type, double amt, String date, {int? account, int? to}) =>
+        db.into(db.transactions).insert(TransactionsCompanion.insert(
+            transactionDate: date, transactionType: type, amount: amt,
+            accountId: Value(account), toAccountId: Value(to)));
+    await add('expense', 300, '2026-07-11', account: gopay);
+    await add('expense', 100, '2026-07-11', account: bca);
+    await add('transfer', 9999, '2026-07-11', account: bca, to: gopay);
+    await add('adjustment', -9999, '2026-07-11', account: bca);
+    await add('expense', 999, '2026-06-30', account: bca);
+
+    final items = await dao.getExpenseByAccount(filter: 'month', today: DateTime(2026, 7, 15));
+    final byName = {for (final i in items) i.name: i};
+    expect(byName.keys, unorderedEquals(['GoPay', 'BCA', 'No account']));
+    expect(byName['GoPay']!.total, 300);
+    expect(byName['BCA']!.total, 100);
+    expect(byName['BCA']!.colorHex, '#123456');
+    expect(byName['No account']!.total, 250);
+    expect(byName['No account']!.hasAccount, isFalse);
+    expect(byName['GoPay']!.percentage, closeTo(300 / 650 * 100, 0.001));
+  });
+
+  test('expense by account uses salary period bounds', () async {
+    await db.into(db.salaryPeriods).insert(SalaryPeriodsCompanion.insert(
+      id: const Value(3), name: 'P', startDate: '2026-07-12', endDate: '2026-07-12'));
+    final items = await dao.getExpenseByAccount(salaryPeriodId: 3, today: DateTime(2026, 7, 15));
+    expect(items.single.total, 50);
+  });
 }

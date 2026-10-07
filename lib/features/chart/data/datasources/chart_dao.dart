@@ -2,7 +2,10 @@ import 'package:drift/drift.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:pixel_pocket/core/database/app_database.dart';
+import 'package:pixel_pocket/features/chart/domain/models/account_expense.dart';
 import 'package:pixel_pocket/features/chart/domain/models/chart_data.dart';
+
+typedef _ChartRange = ({DateTime start, DateTime end, bool monthly});
 
 class ChartDao {
   ChartDao(this._db);
@@ -17,6 +20,59 @@ class ChartDao {
     int? salaryPeriodId,
     DateTime? today,
   }) async {
+    final range = await _range(
+      filter: filter,
+      salaryPeriodId: salaryPeriodId,
+      today: today,
+    );
+    return range.monthly
+        ? _monthly(range.start.year)
+        : _daily(range.start, range.end);
+  }
+
+  Future<List<AccountExpense>> getExpenseByAccount({
+    String? filter,
+    int? salaryPeriodId,
+    DateTime? today,
+  }) async {
+    final range = await _range(
+      filter: filter,
+      salaryPeriodId: salaryPeriodId,
+      today: today,
+    );
+    final rows = await _rowsBetween(
+      _day.format(range.start),
+      _day.format(range.end),
+    );
+    final accounts = await _db.select(_db.accounts).get();
+    final byId = {for (final a in accounts) a.id: a};
+
+    final totals = <int?, double>{};
+    for (final r in rows) {
+      if (r.transactionType != 'expense') continue;
+      totals[r.accountId] = (totals[r.accountId] ?? 0) + r.amount;
+    }
+    final grand = totals.values.fold<double>(0, (sum, v) => sum + v);
+
+    return [
+      for (final e in totals.entries)
+        AccountExpense(
+          accountId: e.key,
+          name: e.key == null
+              ? 'No account'
+              : (byId[e.key]?.name ?? 'Unknown'),
+          colorHex: byId[e.key]?.color,
+          total: e.value,
+          percentage: grand == 0 ? 0 : e.value / grand * 100,
+        ),
+    ];
+  }
+
+  Future<_ChartRange> _range({
+    String? filter,
+    int? salaryPeriodId,
+    DateTime? today,
+  }) async {
     final now = today ?? DateTime.now();
     final anchor = DateTime(now.year, now.month, now.day);
 
@@ -25,21 +81,35 @@ class ChartDao {
             ..where((r) => r.id.equals(salaryPeriodId)))
           .getSingleOrNull();
       if (p != null) {
-        return _daily(DateTime.parse(p.startDate), DateTime.parse(p.endDate));
+        return (
+          start: DateTime.parse(p.startDate),
+          end: DateTime.parse(p.endDate),
+          monthly: false,
+        );
       }
     }
 
     switch (filter ?? 'month') {
       case 'week':
         final start = anchor.subtract(Duration(days: anchor.weekday - 1));
-        return _daily(start, start.add(const Duration(days: 6)));
+        return (
+          start: start,
+          end: start.add(const Duration(days: 6)),
+          monthly: false,
+        );
       case 'year':
-        return _monthly(anchor.year);
+        return (
+          start: DateTime(anchor.year, 1, 1),
+          end: DateTime(anchor.year, 12, 31),
+          monthly: true,
+        );
       case 'month':
       default:
-        final start = DateTime(anchor.year, anchor.month, 1);
-        final end = DateTime(anchor.year, anchor.month + 1, 0);
-        return _daily(start, end);
+        return (
+          start: DateTime(anchor.year, anchor.month, 1),
+          end: DateTime(anchor.year, anchor.month + 1, 0),
+          monthly: false,
+        );
     }
   }
 

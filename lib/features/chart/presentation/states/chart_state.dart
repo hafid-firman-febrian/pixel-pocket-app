@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:pixel_pocket/features/chart/application/services/chart_service.dart';
+import 'package:pixel_pocket/features/chart/domain/models/account_expense.dart';
 import 'package:pixel_pocket/features/chart/domain/models/chart_data.dart';
 import 'package:pixel_pocket/features/salary_period/domain/models/salary_period_model.dart';
 import 'package:pixel_pocket/features/transactions/presentation/states/transaction_state.dart';
@@ -43,4 +44,14 @@ final chartProvider = FutureProvider<ChartData>((ref) {
     return service.chart(salaryPeriodId: filter.salaryPeriod!.id);
   }
   return service.chart(filter: filter.unit.name);
+});
+
+final expenseByAccountProvider = FutureProvider<List<AccountExpense>>((ref) {
+  ref.watch(transactionsRevisionProvider);
+  final filter = ref.watch(chartFilterProvider);
+  final service = ref.watch(chartServiceProvider);
+  if (filter.salaryPeriod != null) {
+    return service.expenseByAccount(salaryPeriodId: filter.salaryPeriod!.id);
+  }
+  return service.expenseByAccount(filter: filter.unit.name);
 });

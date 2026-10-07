@@ -10,6 +10,7 @@ import 'package:pixel_pocket/features/chart/domain/models/chart_data.dart';
 import 'package:pixel_pocket/features/chart/presentation/screens/widgets/chart_filter_bar.dart';
 import 'package:pixel_pocket/features/chart/presentation/screens/widgets/chart_summary_row.dart';
 import 'package:pixel_pocket/features/chart/presentation/screens/widgets/income_expense_chart.dart';
+import 'package:pixel_pocket/features/chart/presentation/screens/widgets/expense_by_account_card.dart';
 import 'package:pixel_pocket/features/chart/presentation/states/chart_state.dart';
 import 'package:skeletonizer/skeletonizer.dart';
 
@@ -80,6 +81,7 @@ class ChartScreen extends ConsumerWidget {
         ChartSummaryRow(data: data),
         const SizedBox(height: AppSpacing.section),
         IncomeExpenseChart(data: data),
+        const ExpenseByAccountSection(),
       ],
     );
   }
