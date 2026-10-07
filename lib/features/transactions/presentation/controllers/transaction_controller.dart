@@ -88,6 +88,7 @@ class TransactionsController
     required double amount,
     int? categoryId,
     String? description,
+    int? accountId,
   }) {
     return _mutateThenReload(
       () => _service.create(
@@ -96,6 +97,7 @@ class TransactionsController
         amount: amount,
         categoryId: categoryId,
         description: description,
+        accountId: accountId,
       ),
     );
   }
@@ -107,6 +109,7 @@ class TransactionsController
     required double amount,
     int? categoryId,
     String? description,
+    int? accountId,
   }) {
     return _mutateThenReload(
       () => _service.update(
@@ -115,6 +118,49 @@ class TransactionsController
         transactionType: transactionType,
         amount: amount,
         categoryId: categoryId,
+        description: description,
+        accountId: accountId,
+      ),
+    );
+  }
+
+  Future<bool> createTransfer({
+    required String transactionDate,
+    required double amount,
+    required int? fromAccountId,
+    required int? toAccountId,
+    double fee = 0,
+    String? description,
+  }) {
+    return _mutateThenReload(
+      () => _service.createTransfer(
+        transactionDate: transactionDate,
+        amount: amount,
+        fromAccountId: fromAccountId,
+        toAccountId: toAccountId,
+        fee: fee,
+        description: description,
+      ),
+    );
+  }
+
+  Future<bool> editTransfer({
+    required int id,
+    required String transactionDate,
+    required double amount,
+    required int? fromAccountId,
+    required int? toAccountId,
+    double fee = 0,
+    String? description,
+  }) {
+    return _mutateThenReload(
+      () => _service.updateTransfer(
+        id: id,
+        transactionDate: transactionDate,
+        amount: amount,
+        fromAccountId: fromAccountId,
+        toAccountId: toAccountId,
+        fee: fee,
         description: description,
       ),
     );
