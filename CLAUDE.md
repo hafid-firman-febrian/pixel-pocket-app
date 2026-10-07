@@ -78,7 +78,7 @@ lib/
 │   ├── cache/
 │   │   └── cache_store.dart        ← wrapper shared_preferences (metadata lokal, bukan cache API)
 │   ├── database/
-│   │   ├── app_database.dart       ← Drift database + DAO registrations (schemaVersion 2, migrasi v1→v2)
+│   │   ├── app_database.dart       ← Drift database + DAO registrations (schemaVersion 3: v1→v2 rekening, v2→v3 urutan rekening)
 │   │   ├── tables.dart             ← definisi tabel: Categories, SalaryPeriods, Transactions, Accounts
 │   │   └── default_categories.dart ← seed 19 kategori default (termasuk Admin Fee)
 │   ├── error/
@@ -183,6 +183,7 @@ class AccountModel {
   final double openingBalance;  // saldo saat rekening dibuat
   final bool isArchived;        // diarsipkan bila dihapus tapi masih punya transaksi
 }
+// Urutan tampil = kolom `sort_order` di tabel accounts (lalu id); diatur lewat drag di Settings.
 ```
 
 ### AccountBalance

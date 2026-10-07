@@ -27,7 +27,10 @@ class AccountDao {
 
   Future<List<AccountModel>> getAll() async {
     final rows = await (_db.select(_db.accounts)
-          ..orderBy([(a) => OrderingTerm.asc(a.id)]))
+          ..orderBy([
+            (a) => OrderingTerm.asc(a.sortOrder),
+            (a) => OrderingTerm.asc(a.id),
+          ]))
         .get();
     return rows.map(_toModel).toList();
   }
@@ -43,11 +46,15 @@ class AccountDao {
     String? color,
     required double openingBalance,
   }) async {
+    final maxOrder = _db.accounts.sortOrder.max();
+    final last = await (_db.selectOnly(_db.accounts)..addColumns([maxOrder]))
+        .getSingle();
     final id = await _db.into(_db.accounts).insert(
           AccountsCompanion.insert(
             name: name,
             color: Value(color),
             openingBalance: Value(openingBalance),
+            sortOrder: Value((last.read(maxOrder) ?? -1) + 1),
           ),
         );
     return AccountModel(
@@ -80,6 +87,15 @@ class AccountDao {
 
   Future<void> delete(int id) async {
     await (_db.delete(_db.accounts)..where((a) => a.id.equals(id))).go();
+  }
+
+  Future<void> reorder(List<int> ids) async {
+    await _db.transaction(() async {
+      for (var i = 0; i < ids.length; i++) {
+        await (_db.update(_db.accounts)..where((a) => a.id.equals(ids[i])))
+            .write(AccountsCompanion(sortOrder: Value(i)));
+      }
+    });
   }
 
   Future<bool> hasTransactions(int id) async {
@@ -127,7 +143,10 @@ class AccountDao {
 
     final first = await (_db.select(a)
           ..where((r) => r.isArchived.equals(false))
-          ..orderBy([(r) => OrderingTerm.asc(r.id)])
+          ..orderBy([
+            (r) => OrderingTerm.asc(r.sortOrder),
+            (r) => OrderingTerm.asc(r.id),
+          ])
           ..limit(1))
         .getSingleOrNull();
     return first?.id;

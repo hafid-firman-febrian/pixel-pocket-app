@@ -409,18 +409,11 @@ class _AccountSection extends ConsumerWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         if (active.isNotEmpty)
-          Wrap(
-            spacing: AppSpacing.s8,
-            runSpacing: AppSpacing.s8,
-            children: [
-              for (final a in active)
-                PixelChip(
-                  label: a.name,
-                  leadingColor: AppColors.fromHex(a.color),
-                  onTap: () => _open(context, existing: a),
-                  onDelete: () => _remove(context, ref, a),
-                ),
-            ],
+          _ActiveAccountList(
+            accounts: active,
+            onOpen: (a) => _open(context, existing: a),
+            onRemove: (a) => _remove(context, ref, a),
+            onMove: (from, to) => _move(context, ref, active, from, to),
           ),
         if (archived.isNotEmpty) ...[
           if (active.isNotEmpty) const SizedBox(height: AppSpacing.s12),
@@ -488,6 +481,23 @@ class _AccountSection extends ConsumerWidget {
     }
   }
 
+  Future<void> _move(
+    BuildContext context,
+    WidgetRef ref,
+    List<AccountModel> active,
+    int from,
+    int to,
+  ) async {
+    final messenger = ScaffoldMessenger.of(context);
+    try {
+      await ref
+          .read(accountControllerProvider)
+          .move(ids: [for (final a in active) a.id], from: from, to: to);
+    } catch (_) {
+      messenger.showPixelSnackBar('Failed to reorder accounts', isError: true);
+    }
+  }
+
   Future<void> _unarchive(
     BuildContext context,
     WidgetRef ref,
@@ -508,6 +518,144 @@ class _AccountSection extends ConsumerWidget {
     } catch (_) {
       messenger.showPixelSnackBar('Failed to restore account', isError: true);
     }
+  }
+}
+
+class _ActiveAccountList extends StatefulWidget {
+  const _ActiveAccountList({
+    required this.accounts,
+    required this.onOpen,
+    required this.onRemove,
+    required this.onMove,
+  });
+
+  final List<AccountModel> accounts;
+  final ValueChanged<AccountModel> onOpen;
+  final ValueChanged<AccountModel> onRemove;
+  final void Function(int from, int to) onMove;
+
+  @override
+  State<_ActiveAccountList> createState() => _ActiveAccountListState();
+}
+
+class _ActiveAccountListState extends State<_ActiveAccountList> {
+  late List<AccountModel> _items = widget.accounts;
+
+  @override
+  void didUpdateWidget(_ActiveAccountList oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    _items = widget.accounts;
+  }
+
+  void _reorder(int from, int to) {
+    setState(() {
+      final next = [..._items];
+      next.insert(to, next.removeAt(from));
+      _items = next;
+    });
+    widget.onMove(from, to);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return ReorderableListView(
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      buildDefaultDragHandles: false,
+      onReorderItem: _reorder,
+      children: [
+        for (var i = 0; i < _items.length; i++)
+          _AccountRow(
+            key: ValueKey(_items[i].id),
+            account: _items[i],
+            index: i,
+            onTap: () => widget.onOpen(_items[i]),
+            onRemove: () => widget.onRemove(_items[i]),
+          ),
+      ],
+    );
+  }
+}
+
+class _AccountRow extends StatelessWidget {
+  const _AccountRow({
+    super.key,
+    required this.account,
+    required this.index,
+    required this.onTap,
+    required this.onRemove,
+  });
+
+  final AccountModel account;
+  final int index;
+  final VoidCallback onTap;
+  final VoidCallback onRemove;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: AppSpacing.s8),
+      child: Container(
+        decoration: BoxDecoration(
+          color: AppColors.surface,
+          border: Border.all(color: AppColors.border),
+        ),
+        child: Row(
+          children: [
+            Expanded(
+              child: InkWell(
+                onTap: onTap,
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: AppSpacing.s12,
+                    vertical: AppSpacing.s8,
+                  ),
+                  child: Row(
+                    children: [
+                      Container(
+                        width: 10,
+                        height: 10,
+                        color: AppColors.fromHex(account.color),
+                      ),
+                      const SizedBox(width: AppSpacing.s8),
+                      Expanded(
+                        child: Text(
+                          account.name,
+                          overflow: TextOverflow.ellipsis,
+                          style: AppTextStyles.bodyNormal,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+            InkWell(
+              onTap: onRemove,
+              child: const Padding(
+                padding: EdgeInsets.all(AppSpacing.s8),
+                child: Icon(
+                  Pixel.close,
+                  size: AppSizing.iconSm,
+                  color: AppColors.textMuted,
+                ),
+              ),
+            ),
+            ReorderableDragStartListener(
+              index: index,
+              child: const Padding(
+                padding: EdgeInsets.all(AppSpacing.s8),
+                child: Icon(
+                  Pixel.menu,
+                  size: AppSizing.iconMd,
+                  color: AppColors.textMuted,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 }
 

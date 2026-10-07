@@ -1383,6 +1383,18 @@ class $AccountsTable extends Accounts with TableInfo<$AccountsTable, Account> {
     ),
     defaultValue: const Constant(false),
   );
+  static const VerificationMeta _sortOrderMeta = const VerificationMeta(
+    'sortOrder',
+  );
+  @override
+  late final GeneratedColumn<int> sortOrder = GeneratedColumn<int>(
+    'sort_order',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0),
+  );
   @override
   List<GeneratedColumn> get $columns => [
     id,
@@ -1390,6 +1402,7 @@ class $AccountsTable extends Accounts with TableInfo<$AccountsTable, Account> {
     color,
     openingBalance,
     isArchived,
+    sortOrder,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -1435,6 +1448,12 @@ class $AccountsTable extends Accounts with TableInfo<$AccountsTable, Account> {
         isArchived.isAcceptableOrUnknown(data['is_archived']!, _isArchivedMeta),
       );
     }
+    if (data.containsKey('sort_order')) {
+      context.handle(
+        _sortOrderMeta,
+        sortOrder.isAcceptableOrUnknown(data['sort_order']!, _sortOrderMeta),
+      );
+    }
     return context;
   }
 
@@ -1464,6 +1483,10 @@ class $AccountsTable extends Accounts with TableInfo<$AccountsTable, Account> {
         DriftSqlType.bool,
         data['${effectivePrefix}is_archived'],
       )!,
+      sortOrder: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}sort_order'],
+      )!,
     );
   }
 
@@ -1479,12 +1502,14 @@ class Account extends DataClass implements Insertable<Account> {
   final String? color;
   final double openingBalance;
   final bool isArchived;
+  final int sortOrder;
   const Account({
     required this.id,
     required this.name,
     this.color,
     required this.openingBalance,
     required this.isArchived,
+    required this.sortOrder,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -1496,6 +1521,7 @@ class Account extends DataClass implements Insertable<Account> {
     }
     map['opening_balance'] = Variable<double>(openingBalance);
     map['is_archived'] = Variable<bool>(isArchived);
+    map['sort_order'] = Variable<int>(sortOrder);
     return map;
   }
 
@@ -1508,6 +1534,7 @@ class Account extends DataClass implements Insertable<Account> {
           : Value(color),
       openingBalance: Value(openingBalance),
       isArchived: Value(isArchived),
+      sortOrder: Value(sortOrder),
     );
   }
 
@@ -1522,6 +1549,7 @@ class Account extends DataClass implements Insertable<Account> {
       color: serializer.fromJson<String?>(json['color']),
       openingBalance: serializer.fromJson<double>(json['openingBalance']),
       isArchived: serializer.fromJson<bool>(json['isArchived']),
+      sortOrder: serializer.fromJson<int>(json['sortOrder']),
     );
   }
   @override
@@ -1533,6 +1561,7 @@ class Account extends DataClass implements Insertable<Account> {
       'color': serializer.toJson<String?>(color),
       'openingBalance': serializer.toJson<double>(openingBalance),
       'isArchived': serializer.toJson<bool>(isArchived),
+      'sortOrder': serializer.toJson<int>(sortOrder),
     };
   }
 
@@ -1542,12 +1571,14 @@ class Account extends DataClass implements Insertable<Account> {
     Value<String?> color = const Value.absent(),
     double? openingBalance,
     bool? isArchived,
+    int? sortOrder,
   }) => Account(
     id: id ?? this.id,
     name: name ?? this.name,
     color: color.present ? color.value : this.color,
     openingBalance: openingBalance ?? this.openingBalance,
     isArchived: isArchived ?? this.isArchived,
+    sortOrder: sortOrder ?? this.sortOrder,
   );
   Account copyWithCompanion(AccountsCompanion data) {
     return Account(
@@ -1560,6 +1591,7 @@ class Account extends DataClass implements Insertable<Account> {
       isArchived: data.isArchived.present
           ? data.isArchived.value
           : this.isArchived,
+      sortOrder: data.sortOrder.present ? data.sortOrder.value : this.sortOrder,
     );
   }
 
@@ -1570,13 +1602,15 @@ class Account extends DataClass implements Insertable<Account> {
           ..write('name: $name, ')
           ..write('color: $color, ')
           ..write('openingBalance: $openingBalance, ')
-          ..write('isArchived: $isArchived')
+          ..write('isArchived: $isArchived, ')
+          ..write('sortOrder: $sortOrder')
           ..write(')'))
         .toString();
   }
 
   @override
-  int get hashCode => Object.hash(id, name, color, openingBalance, isArchived);
+  int get hashCode =>
+      Object.hash(id, name, color, openingBalance, isArchived, sortOrder);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -1585,7 +1619,8 @@ class Account extends DataClass implements Insertable<Account> {
           other.name == this.name &&
           other.color == this.color &&
           other.openingBalance == this.openingBalance &&
-          other.isArchived == this.isArchived);
+          other.isArchived == this.isArchived &&
+          other.sortOrder == this.sortOrder);
 }
 
 class AccountsCompanion extends UpdateCompanion<Account> {
@@ -1594,12 +1629,14 @@ class AccountsCompanion extends UpdateCompanion<Account> {
   final Value<String?> color;
   final Value<double> openingBalance;
   final Value<bool> isArchived;
+  final Value<int> sortOrder;
   const AccountsCompanion({
     this.id = const Value.absent(),
     this.name = const Value.absent(),
     this.color = const Value.absent(),
     this.openingBalance = const Value.absent(),
     this.isArchived = const Value.absent(),
+    this.sortOrder = const Value.absent(),
   });
   AccountsCompanion.insert({
     this.id = const Value.absent(),
@@ -1607,6 +1644,7 @@ class AccountsCompanion extends UpdateCompanion<Account> {
     this.color = const Value.absent(),
     this.openingBalance = const Value.absent(),
     this.isArchived = const Value.absent(),
+    this.sortOrder = const Value.absent(),
   }) : name = Value(name);
   static Insertable<Account> custom({
     Expression<int>? id,
@@ -1614,6 +1652,7 @@ class AccountsCompanion extends UpdateCompanion<Account> {
     Expression<String>? color,
     Expression<double>? openingBalance,
     Expression<bool>? isArchived,
+    Expression<int>? sortOrder,
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
@@ -1621,6 +1660,7 @@ class AccountsCompanion extends UpdateCompanion<Account> {
       if (color != null) 'color': color,
       if (openingBalance != null) 'opening_balance': openingBalance,
       if (isArchived != null) 'is_archived': isArchived,
+      if (sortOrder != null) 'sort_order': sortOrder,
     });
   }
 
@@ -1630,6 +1670,7 @@ class AccountsCompanion extends UpdateCompanion<Account> {
     Value<String?>? color,
     Value<double>? openingBalance,
     Value<bool>? isArchived,
+    Value<int>? sortOrder,
   }) {
     return AccountsCompanion(
       id: id ?? this.id,
@@ -1637,6 +1678,7 @@ class AccountsCompanion extends UpdateCompanion<Account> {
       color: color ?? this.color,
       openingBalance: openingBalance ?? this.openingBalance,
       isArchived: isArchived ?? this.isArchived,
+      sortOrder: sortOrder ?? this.sortOrder,
     );
   }
 
@@ -1658,6 +1700,9 @@ class AccountsCompanion extends UpdateCompanion<Account> {
     if (isArchived.present) {
       map['is_archived'] = Variable<bool>(isArchived.value);
     }
+    if (sortOrder.present) {
+      map['sort_order'] = Variable<int>(sortOrder.value);
+    }
     return map;
   }
 
@@ -1668,7 +1713,8 @@ class AccountsCompanion extends UpdateCompanion<Account> {
           ..write('name: $name, ')
           ..write('color: $color, ')
           ..write('openingBalance: $openingBalance, ')
-          ..write('isArchived: $isArchived')
+          ..write('isArchived: $isArchived, ')
+          ..write('sortOrder: $sortOrder')
           ..write(')'))
         .toString();
   }
@@ -2385,6 +2431,7 @@ typedef $$AccountsTableCreateCompanionBuilder =
       Value<String?> color,
       Value<double> openingBalance,
       Value<bool> isArchived,
+      Value<int> sortOrder,
     });
 typedef $$AccountsTableUpdateCompanionBuilder =
     AccountsCompanion Function({
@@ -2393,6 +2440,7 @@ typedef $$AccountsTableUpdateCompanionBuilder =
       Value<String?> color,
       Value<double> openingBalance,
       Value<bool> isArchived,
+      Value<int> sortOrder,
     });
 
 class $$AccountsTableFilterComposer
@@ -2426,6 +2474,11 @@ class $$AccountsTableFilterComposer
 
   ColumnFilters<bool> get isArchived => $composableBuilder(
     column: $table.isArchived,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get sortOrder => $composableBuilder(
+    column: $table.sortOrder,
     builder: (column) => ColumnFilters(column),
   );
 }
@@ -2463,6 +2516,11 @@ class $$AccountsTableOrderingComposer
     column: $table.isArchived,
     builder: (column) => ColumnOrderings(column),
   );
+
+  ColumnOrderings<int> get sortOrder => $composableBuilder(
+    column: $table.sortOrder,
+    builder: (column) => ColumnOrderings(column),
+  );
 }
 
 class $$AccountsTableAnnotationComposer
@@ -2492,6 +2550,9 @@ class $$AccountsTableAnnotationComposer
     column: $table.isArchived,
     builder: (column) => column,
   );
+
+  GeneratedColumn<int> get sortOrder =>
+      $composableBuilder(column: $table.sortOrder, builder: (column) => column);
 }
 
 class $$AccountsTableTableManager
@@ -2527,12 +2588,14 @@ class $$AccountsTableTableManager
                 Value<String?> color = const Value.absent(),
                 Value<double> openingBalance = const Value.absent(),
                 Value<bool> isArchived = const Value.absent(),
+                Value<int> sortOrder = const Value.absent(),
               }) => AccountsCompanion(
                 id: id,
                 name: name,
                 color: color,
                 openingBalance: openingBalance,
                 isArchived: isArchived,
+                sortOrder: sortOrder,
               ),
           createCompanionCallback:
               ({
@@ -2541,12 +2604,14 @@ class $$AccountsTableTableManager
                 Value<String?> color = const Value.absent(),
                 Value<double> openingBalance = const Value.absent(),
                 Value<bool> isArchived = const Value.absent(),
+                Value<int> sortOrder = const Value.absent(),
               }) => AccountsCompanion.insert(
                 id: id,
                 name: name,
                 color: color,
                 openingBalance: openingBalance,
                 isArchived: isArchived,
+                sortOrder: sortOrder,
               ),
           withReferenceMapper: (p0) => p0
               .map((e) => (e.readTable(table), BaseReferences(db, table, e)))

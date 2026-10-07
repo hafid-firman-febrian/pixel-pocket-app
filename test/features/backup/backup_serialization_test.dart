@@ -123,7 +123,8 @@ void main() {
   test('account row round-trips', () async {
     final id = await db.into(db.accounts).insert(AccountsCompanion.insert(
         name: 'Dana', color: const Value('#5F8A8B'),
-        openingBalance: const Value(230000), isArchived: const Value(true)));
+        openingBalance: const Value(230000), isArchived: const Value(true),
+        sortOrder: const Value(3)));
     final row = await (db.select(db.accounts)..where((a) => a.id.equals(id))).getSingle();
 
     final c = accountFromRow(accountToRow(row));
@@ -132,6 +133,7 @@ void main() {
     expect(c.color.value, '#5F8A8B');
     expect(c.openingBalance.value, 230000);
     expect(c.isArchived.value, isTrue);
+    expect(c.sortOrder.value, 3);
   });
 
   test('a padded account row falls back to safe defaults', () {
@@ -139,6 +141,15 @@ void main() {
     expect(c.color.value, isNull);
     expect(c.openingBalance.value, 0);
     expect(c.isArchived.value, isFalse);
+    expect(c.sortOrder.value, 0);
+  });
+
+  test('an account row from a 1.1.0 test build restores with order 0', () {
+    final c = accountFromRow(
+        padRow(['1', 'BCA', '#386694', '100000', 'false'], accountsHeader.length));
+    expect(c.name.value, 'BCA');
+    expect(c.openingBalance.value, 100000);
+    expect(c.sortOrder.value, 0);
   });
 
   test('transaction account columns round-trip', () async {

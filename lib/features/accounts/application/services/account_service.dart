@@ -60,6 +60,15 @@ class AccountService {
 
   Future<void> unarchive(int id) => _repo.setArchived(id, archived: false);
 
+  Future<void> reorder(List<int> ids) => _repo.reorder(ids);
+
+  static List<int> moved(List<int> ids, int from, int to) {
+    final next = [...ids];
+    final id = next.removeAt(from);
+    next.insert(to, id);
+    return next;
+  }
+
   Future<bool> adjustBalance({
     required int accountId,
     required double actualBalance,

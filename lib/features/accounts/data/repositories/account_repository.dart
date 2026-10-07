@@ -37,6 +37,8 @@ class AccountRepository {
 
   Future<void> delete(int id) => _dao.delete(id);
 
+  Future<void> reorder(List<int> ids) => _dao.reorder(ids);
+
   Future<bool> hasTransactions(int id) => _dao.hasTransactions(id);
 
   Future<List<AccountBalance>> getBalances() => _dao.getBalances();

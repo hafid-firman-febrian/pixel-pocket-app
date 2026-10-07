@@ -164,4 +164,36 @@ void main() {
     expect(row.transactionDate, '2026-10-07');
     expect((await dao.getBalances()).single.balance, 60000);
   });
+
+  group('order', () {
+    test('new accounts are added at the end', () async {
+      final bca = await dao.create(name: 'BCA', openingBalance: 0);
+      final dana = await dao.create(name: 'Dana', openingBalance: 0);
+      await dao.reorder([dana.id, bca.id]);
+      await dao.create(name: 'Cash', openingBalance: 0);
+
+      expect((await dao.getAll()).map((a) => a.name), ['Dana', 'BCA', 'Cash']);
+    });
+
+    test('reorder changes the order of accounts and balances', () async {
+      final bca = await dao.create(name: 'BCA', openingBalance: 0);
+      final dana = await dao.create(name: 'Dana', openingBalance: 0);
+      final cash = await dao.create(name: 'Cash', openingBalance: 0);
+      await dao.reorder([cash.id, bca.id, dana.id]);
+
+      expect((await dao.getAll()).map((a) => a.name), ['Cash', 'BCA', 'Dana']);
+      expect(
+        (await dao.getBalances()).map((b) => b.account.name),
+        ['Cash', 'BCA', 'Dana'],
+      );
+    });
+
+    test('the fallback default account is the first in order', () async {
+      final bca = await dao.create(name: 'BCA', openingBalance: 0);
+      final dana = await dao.create(name: 'Dana', openingBalance: 0);
+      await dao.reorder([dana.id, bca.id]);
+
+      expect(await dao.lastUsedAccountId(transfer: false), dana.id);
+    });
+  });
 }

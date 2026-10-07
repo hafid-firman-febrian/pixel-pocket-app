@@ -8,7 +8,9 @@ const transactionsHeader = [
   'category_id', 'description', 'created_at', 'updated_at',
   'account_id', 'to_account_id', 'linked_transaction_id',
 ];
-const accountsHeader = ['id', 'name', 'color', 'opening_balance', 'is_archived'];
+const accountsHeader = [
+  'id', 'name', 'color', 'opening_balance', 'is_archived', 'sort_order',
+];
 
 String _s(Object? v) => v == null ? '' : v.toString();
 String? _nullable(Object? v) {
@@ -72,6 +74,7 @@ TransactionsCompanion transactionFromRow(List<Object?> r) => TransactionsCompani
 
 List<Object?> accountToRow(Account a) => [
   _s(a.id), _s(a.name), _s(a.color), _s(a.openingBalance), _s(a.isArchived),
+  _s(a.sortOrder),
 ];
 
 AccountsCompanion accountFromRow(List<Object?> r) => AccountsCompanion(
@@ -80,6 +83,7 @@ AccountsCompanion accountFromRow(List<Object?> r) => AccountsCompanion(
   color: Value(_nullable(r[2])),
   openingBalance: Value(_doubleN(r[3]) ?? 0),
   isArchived: Value(r[4].toString().toLowerCase() == 'true'),
+  sortOrder: Value(_intN(r[5]) ?? 0),
 );
 
 class RemoteBackupSummary {

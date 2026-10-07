@@ -44,6 +44,7 @@ class Accounts extends Table {
   TextColumn get color => text().nullable()();
   RealColumn get openingBalance => real().withDefault(const Constant(0.0))();
   BoolColumn get isArchived => boolean().withDefault(const Constant(false))();
+  IntColumn get sortOrder => integer().withDefault(const Constant(0))();
 
   @override
   Set<Column> get primaryKey => {id};

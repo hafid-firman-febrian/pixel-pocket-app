@@ -132,4 +132,14 @@ void main() {
       );
     });
   });
+
+  group('moved', () {
+    test('moves an account down to its new position', () {
+      expect(AccountService.moved([1, 2, 3], 0, 2), [2, 3, 1]);
+    });
+
+    test('moves an account up to its new position', () {
+      expect(AccountService.moved([1, 2, 3], 2, 0), [3, 1, 2]);
+    });
+  });
 }

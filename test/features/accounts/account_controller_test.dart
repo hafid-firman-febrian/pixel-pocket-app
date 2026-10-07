@@ -76,4 +76,19 @@ void main() {
     final active = await container.read(activeAccountsProvider.future);
     expect(active.map((a) => a.name), ['BCA']);
   });
+
+  test('moving an account refreshes the order', () async {
+    final controller = container.read(accountControllerProvider);
+    await controller.create(name: 'BCA', openingBalance: 0);
+    await controller.create(name: 'Dana', openingBalance: 0);
+    await controller.create(name: 'Cash', openingBalance: 0);
+    final ids =
+        (await container.read(accountsProvider.future)).map((a) => a.id).toList();
+
+    await controller.move(ids: ids, from: 2, to: 0);
+
+    final names =
+        (await container.read(accountsProvider.future)).map((a) => a.name);
+    expect(names, ['Cash', 'BCA', 'Dana']);
+  });
 }

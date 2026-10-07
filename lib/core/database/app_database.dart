@@ -18,7 +18,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.forTesting(super.e);
 
   @override
-  int get schemaVersion => 2;
+  int get schemaVersion => 3;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -34,6 +34,9 @@ class AppDatabase extends _$AppDatabase {
             if (hasCategories) {
               await adminFeeCategoryId();
             }
+          }
+          if (from == 2) {
+            await m.addColumn(accounts, accounts.sortOrder);
           }
         },
       );

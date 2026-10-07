@@ -55,6 +55,15 @@ class AccountController {
     _afterChange();
   }
 
+  Future<void> move({
+    required List<int> ids,
+    required int from,
+    required int to,
+  }) async {
+    await _service.reorder(AccountService.moved(ids, from, to));
+    _afterChange();
+  }
+
   Future<bool> adjustBalance({
     required int accountId,
     required double actualBalance,
