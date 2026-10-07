@@ -94,6 +94,7 @@ class BackupRepository {
       final cats = await _db.select(_db.categories).get();
       final periods = await _db.select(_db.salaryPeriods).get();
       final txs = await _db.select(_db.transactions).get();
+      final accounts = await _db.select(_db.accounts).get();
 
       await _sheets.writeTab(id, 'Categories', [
         categoriesHeader,
@@ -103,6 +104,11 @@ class BackupRepository {
         salaryPeriodsHeader,
         ...periods.map(salaryPeriodToRow),
       ]);
+      await _sheets.ensureTab(id, 'Accounts');
+      await _sheets.writeTab(id, 'Accounts', [
+        accountsHeader,
+        ...accounts.map(accountToRow),
+      ]);
       await _sheets.writeTab(id, 'Transactions', [
         transactionsHeader,
         ...txs.map(transactionToRow),
@@ -110,10 +116,11 @@ class BackupRepository {
       final now = DateTime.now();
       await _sheets.writeTab(id, 'Metadata', [
         ['key', 'value'],
-        ['schema_version', '1'],
+        ['schema_version', '2'],
         ['last_backup_at', now.toIso8601String()],
         ['categories', '${cats.length}'],
         ['salary_periods', '${periods.length}'],
+        ['accounts', '${accounts.length}'],
         ['transactions', '${txs.length}'],
       ]);
       await _meta.setLastBackupAt(now);
@@ -130,8 +137,10 @@ class BackupRepository {
       final id = _meta.spreadsheetId ?? await _sheets.findOrCreateSpreadsheet();
       final cats = _dropHeader(await _sheets.readTab(id, 'Categories'));
       final periods = _dropHeader(await _sheets.readTab(id, 'SalaryPeriods'));
+      final accounts =
+          _dropHeader(await _sheets.readTabIfExists(id, 'Accounts'));
       final txs = _dropHeader(await _sheets.readTab(id, 'Transactions'));
-      if (cats.isEmpty && periods.isEmpty && txs.isEmpty) {
+      if (cats.isEmpty && periods.isEmpty && accounts.isEmpty && txs.isEmpty) {
         throw const Failure(message: 'No backup found to restore.');
       }
       await _db.replaceAll(
@@ -140,6 +149,9 @@ class BackupRepository {
             .toList(),
         salaryPeriods: periods
             .map((r) => salaryPeriodFromRow(padRow(r, salaryPeriodsHeader.length)))
+            .toList(),
+        accounts: accounts
+            .map((r) => accountFromRow(padRow(r, accountsHeader.length)))
             .toList(),
         transactions: txs
             .map((r) => transactionFromRow(padRow(r, transactionsHeader.length)))

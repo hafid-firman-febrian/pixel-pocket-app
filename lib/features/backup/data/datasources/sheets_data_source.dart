@@ -4,7 +4,13 @@ import 'package:googleapis/sheets/v4.dart' as sheets;
 import 'package:pixel_pocket/features/backup/data/datasources/google_auth_client.dart';
 
 const backupFileName = 'Pixel Pocket Backup';
-const backupTabs = ['Transactions', 'Categories', 'SalaryPeriods', 'Metadata'];
+const backupTabs = [
+  'Transactions',
+  'Categories',
+  'SalaryPeriods',
+  'Accounts',
+  'Metadata',
+];
 
 class SheetsDataSource {
   SheetsDataSource(this._auth);
@@ -75,6 +81,52 @@ class SheetsDataSource {
     } finally {
       client.close();
     }
+  }
+
+  Future<List<String>> tabTitles(String spreadsheetId) async {
+    final client = _auth.authedClient();
+    try {
+      final api = sheets.SheetsApi(client);
+      final spreadsheet = await api.spreadsheets.get(
+        spreadsheetId,
+        $fields: 'sheets.properties.title',
+      );
+      return (spreadsheet.sheets ?? const <sheets.Sheet>[])
+          .map((s) => s.properties?.title)
+          .whereType<String>()
+          .toList();
+    } finally {
+      client.close();
+    }
+  }
+
+  Future<void> ensureTab(String spreadsheetId, String tab) async {
+    if ((await tabTitles(spreadsheetId)).contains(tab)) return;
+    final client = _auth.authedClient();
+    try {
+      await sheets.SheetsApi(client).spreadsheets.batchUpdate(
+            sheets.BatchUpdateSpreadsheetRequest(
+              requests: [
+                sheets.Request(
+                  addSheet: sheets.AddSheetRequest(
+                    properties: sheets.SheetProperties(title: tab),
+                  ),
+                ),
+              ],
+            ),
+            spreadsheetId,
+          );
+    } finally {
+      client.close();
+    }
+  }
+
+  Future<List<List<Object?>>> readTabIfExists(
+    String spreadsheetId,
+    String tab,
+  ) async {
+    if (!(await tabTitles(spreadsheetId)).contains(tab)) return const [];
+    return readTab(spreadsheetId, tab);
   }
 }
 

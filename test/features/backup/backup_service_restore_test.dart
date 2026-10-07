@@ -17,6 +17,10 @@ class _FakeSheets extends SheetsDataSource {
   _FakeSheets() : super(_unusedAuth());
 
   @override
+  Future<List<String>> tabTitles(String spreadsheetId) async =>
+      const ['Transactions', 'Categories', 'SalaryPeriods', 'Metadata'];
+
+  @override
   Future<List<List<Object?>>> readTab(String spreadsheetId, String tab) async {
     switch (tab) {
       case 'Categories':
@@ -35,6 +39,10 @@ class _EmptySheets extends SheetsDataSource {
   _EmptySheets() : super(_unusedAuth());
 
   @override
+  Future<List<String>> tabTitles(String spreadsheetId) async =>
+      const ['Transactions', 'Categories', 'SalaryPeriods', 'Metadata'];
+
+  @override
   Future<List<List<Object?>>> readTab(String spreadsheetId, String tab) async {
     switch (tab) {
       case 'Categories':
@@ -43,6 +51,34 @@ class _EmptySheets extends SheetsDataSource {
         return [salaryPeriodsHeader];
       case 'Transactions':
         return [];
+      default:
+        return [];
+    }
+  }
+}
+
+class _AccountsSheets extends SheetsDataSource {
+  _AccountsSheets() : super(_unusedAuth());
+
+  @override
+  Future<List<String>> tabTitles(String spreadsheetId) async => backupTabs;
+
+  @override
+  Future<List<List<Object?>>> readTab(String spreadsheetId, String tab) async {
+    switch (tab) {
+      case 'Categories':
+        return [categoriesHeader, ['7', 'Food', '#111111', 'expense']];
+      case 'Accounts':
+        return [
+          accountsHeader,
+          ['1', 'BCA', '#111111', '100000', 'false'],
+          ['2', 'Dana', '', '0', 'true'],
+        ];
+      case 'Transactions':
+        return [
+          transactionsHeader,
+          ['99', '2026-07-05', 'transfer', '50000', '', '', '', '', '1', '2', ''],
+        ];
       default:
         return [];
     }
@@ -73,6 +109,8 @@ void main() {
     expect(tx.categoryId, 7);
     expect(tx.description, 'kopi');
     expect((await db.select(db.salaryPeriods).getSingle()).salaryAmount, isNull);
+    expect(tx.accountId, isNull);
+    expect(await db.select(db.accounts).get(), isEmpty);
   });
 
   test('restore from an empty spreadsheet throws and keeps local data intact', () async {
@@ -90,5 +128,25 @@ void main() {
 
     final cats = await db.select(db.categories).get();
     expect(cats.map((c) => c.id), [1]);
+  });
+
+  test('restore brings back accounts and the transaction account columns', () async {
+    final prefs = await SharedPreferences.getInstance();
+    final repo = BackupRepository(
+      auth: _unusedAuth(),
+      sheets: _AccountsSheets(),
+      db: db,
+      meta: BackupMetadataStore(prefs),
+    );
+    await repo.restore();
+
+    final accounts = await db.select(db.accounts).get();
+    expect(accounts.map((a) => a.name), ['BCA', 'Dana']);
+    expect(accounts.first.openingBalance, 100000);
+    expect(accounts.last.isArchived, isTrue);
+    expect(accounts.last.color, isNull);
+    final tx = await db.select(db.transactions).getSingle();
+    expect(tx.accountId, 1);
+    expect(tx.toAccountId, 2);
   });
 }

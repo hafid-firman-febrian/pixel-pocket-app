@@ -27,6 +27,13 @@ class _StubSheets extends SheetsDataSource {
   @override
   Future<List<List<Object?>>> readTab(String spreadsheetId, String tab) async =>
       tabs[tab] ?? const [];
+
+  @override
+  Future<List<String>> tabTitles(String spreadsheetId) async =>
+      tabs.keys.toList();
+
+  @override
+  Future<void> ensureTab(String spreadsheetId, String tab) async {}
 }
 
 class _ThrowingSheets extends SheetsDataSource {
@@ -45,6 +52,12 @@ class _WritableSheets extends _StubSheets {
   _WritableSheets(super.tabs);
 
   final written = <String>[];
+  final ensured = <String>[];
+
+  @override
+  Future<void> ensureTab(String spreadsheetId, String tab) async {
+    ensured.add(tab);
+  }
 
   @override
   Future<void> writeTab(
@@ -259,6 +272,14 @@ void main() {
       expect(meta.needsRestoreDecision, false);
       expect(meta.remoteTransactionCount, isNull);
       expect(sheets.written, contains('Transactions'));
+    });
+
+    test('backup creates the Accounts tab before writing it', () async {
+      final sheets = _WritableSheets(_populatedTabs());
+      await _repo(db, meta, sheets).backup();
+
+      expect(sheets.ensured, ['Accounts']);
+      expect(sheets.written, contains('Accounts'));
     });
 
     test('a successful restore clears the flag', () async {

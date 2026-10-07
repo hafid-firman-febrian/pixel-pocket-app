@@ -119,4 +119,59 @@ void main() {
       expect(summary!.transactions, 5);
     });
   });
+
+  test('account row round-trips', () async {
+    final id = await db.into(db.accounts).insert(AccountsCompanion.insert(
+        name: 'Dana', color: const Value('#5F8A8B'),
+        openingBalance: const Value(230000), isArchived: const Value(true)));
+    final row = await (db.select(db.accounts)..where((a) => a.id.equals(id))).getSingle();
+
+    final c = accountFromRow(accountToRow(row));
+    expect(c.id.value, id);
+    expect(c.name.value, 'Dana');
+    expect(c.color.value, '#5F8A8B');
+    expect(c.openingBalance.value, 230000);
+    expect(c.isArchived.value, isTrue);
+  });
+
+  test('a padded account row falls back to safe defaults', () {
+    final c = accountFromRow(padRow(['4', 'Cash'], accountsHeader.length));
+    expect(c.color.value, isNull);
+    expect(c.openingBalance.value, 0);
+    expect(c.isArchived.value, isFalse);
+  });
+
+  test('transaction account columns round-trip', () async {
+    final id = await db.into(db.transactions).insert(TransactionsCompanion.insert(
+        transactionDate: '2026-07-05', transactionType: 'expense', amount: 2500,
+        accountId: const Value(1), toAccountId: const Value(2),
+        linkedTransactionId: const Value(3)));
+    final row = await (db.select(db.transactions)..where((t) => t.id.equals(id))).getSingle();
+
+    final cells = transactionToRow(row);
+    expect(cells.length, transactionsHeader.length);
+    final c = transactionFromRow(cells);
+    expect(c.accountId.value, 1);
+    expect(c.toAccountId.value, 2);
+    expect(c.linkedTransactionId.value, 3);
+  });
+
+  test('an old 8-column transaction row restores without accounts', () {
+    final c = transactionFromRow(padRow(
+        ['99', '2026-07-05', 'expense', '12', '7', 'kopi', '', ''],
+        transactionsHeader.length));
+    expect(c.accountId.value, isNull);
+    expect(c.toAccountId.value, isNull);
+    expect(c.linkedTransactionId.value, isNull);
+    expect(c.categoryId.value, 7);
+  });
+
+  test('the remote summary counts accounts', () {
+    final s = remoteSummaryFromMetadataRows([
+      ['key', 'value'],
+      ['accounts', '3'],
+    ]);
+    expect(s!.accounts, 3);
+    expect(s.isEmpty, isFalse);
+  });
 }

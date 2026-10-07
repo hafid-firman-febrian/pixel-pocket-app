@@ -6,7 +6,9 @@ const salaryPeriodsHeader = ['id', 'name', 'start_date', 'end_date', 'salary_amo
 const transactionsHeader = [
   'id', 'transaction_date', 'transaction_type', 'amount',
   'category_id', 'description', 'created_at', 'updated_at',
+  'account_id', 'to_account_id', 'linked_transaction_id',
 ];
+const accountsHeader = ['id', 'name', 'color', 'opening_balance', 'is_archived'];
 
 String _s(Object? v) => v == null ? '' : v.toString();
 String? _nullable(Object? v) {
@@ -51,6 +53,7 @@ SalaryPeriodsCompanion salaryPeriodFromRow(List<Object?> r) => SalaryPeriodsComp
 List<Object?> transactionToRow(Transaction t) => [
   _s(t.id), _s(t.transactionDate), _s(t.transactionType), _s(t.amount),
   _s(t.categoryId), _s(t.description), _s(t.createdAt), _s(t.updatedAt),
+  _s(t.accountId), _s(t.toAccountId), _s(t.linkedTransactionId),
 ];
 
 TransactionsCompanion transactionFromRow(List<Object?> r) => TransactionsCompanion(
@@ -62,6 +65,21 @@ TransactionsCompanion transactionFromRow(List<Object?> r) => TransactionsCompani
   description: Value(_nullable(r[5])),
   createdAt: Value(_nullable(r[6])),
   updatedAt: Value(_nullable(r[7])),
+  accountId: Value(_intN(r[8])),
+  toAccountId: Value(_intN(r[9])),
+  linkedTransactionId: Value(_intN(r[10])),
+);
+
+List<Object?> accountToRow(Account a) => [
+  _s(a.id), _s(a.name), _s(a.color), _s(a.openingBalance), _s(a.isArchived),
+];
+
+AccountsCompanion accountFromRow(List<Object?> r) => AccountsCompanion(
+  id: Value(_int(r[0])),
+  name: Value(r[1].toString()),
+  color: Value(_nullable(r[2])),
+  openingBalance: Value(_doubleN(r[3]) ?? 0),
+  isArchived: Value(r[4].toString().toLowerCase() == 'true'),
 );
 
 class RemoteBackupSummary {
@@ -69,16 +87,21 @@ class RemoteBackupSummary {
     required this.transactions,
     required this.categories,
     required this.salaryPeriods,
+    this.accounts = 0,
     this.lastBackupAt,
   });
 
   final int transactions;
   final int categories;
   final int salaryPeriods;
+  final int accounts;
   final DateTime? lastBackupAt;
 
   bool get isEmpty =>
-      transactions == 0 && categories == 0 && salaryPeriods == 0;
+      transactions == 0 &&
+      categories == 0 &&
+      salaryPeriods == 0 &&
+      accounts == 0;
 }
 
 RemoteBackupSummary? remoteSummaryFromMetadataRows(List<List<Object?>> rows) {
@@ -90,13 +113,18 @@ RemoteBackupSummary? remoteSummaryFromMetadataRows(List<List<Object?>> rows) {
   final transactions = int.tryParse(values['transactions'] ?? '');
   final categories = int.tryParse(values['categories'] ?? '');
   final salaryPeriods = int.tryParse(values['salary_periods'] ?? '');
-  if (transactions == null && categories == null && salaryPeriods == null) {
+  final accounts = int.tryParse(values['accounts'] ?? '');
+  if (transactions == null &&
+      categories == null &&
+      salaryPeriods == null &&
+      accounts == null) {
     return null;
   }
   return RemoteBackupSummary(
     transactions: transactions ?? 0,
     categories: categories ?? 0,
     salaryPeriods: salaryPeriods ?? 0,
+    accounts: accounts ?? 0,
     lastBackupAt: DateTime.tryParse(values['last_backup_at'] ?? ''),
   );
 }
