@@ -68,7 +68,7 @@ The account color picker starts with muted versions of the BCA, DANA, GoPay, Jag
 
 ---
 
-## 1.0.5 — unreleased
+## 1.0.5 — 2026-10-06
 
 Covers everything merged after 1.0.4. This release is mostly a visual refresh: a new navigation bar, a terminal-style PIN lock, and a new app icon. It also fixes stale Home and Chart data after saving a transaction, and stops Android from bringing back an old copy of the app's data after a reinstall. There is no database schema change and no new permission.
 
