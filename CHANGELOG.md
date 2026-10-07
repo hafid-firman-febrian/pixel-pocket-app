@@ -6,6 +6,68 @@ Pixel Pocket is local-first: the on-device Drift/SQLite database is the source o
 
 ---
 
+## 1.1.0 — 2026-10-07
+
+Covers everything merged after 1.0.5. This release adds **accounts**: you can now track where your money sits (bank accounts, e-wallets, cash), move it between accounts, and see how much each one spent. The database moves from schema 1 to schema 3. The upgrade runs automatically on first launch and keeps every existing transaction. No new permission.
+
+### Added
+
+**Accounts**
+
+- Create accounts in **Settings → Accounts** with a name, an opening balance, and a color. Set the opening balance to what your bank or e-wallet app shows today. Balances are tracked from that point on.
+- Every new income or expense is recorded against an account. The form starts on the account you used last, so several GoPay purchases in a row need no extra tap.
+- The **Accounts · Current balance** card on Home lists each account's balance and a total. It always shows today's balance and does not follow the period filter. It follows the eye toggle that hides the balance, and a negative balance shows in red.
+- Tap an account to open its page. It shows the current balance and the account's full history, with transfers marked **+** coming in and **−** going out. The page also has **Adjust balance**.
+- Set the order of your accounts by dragging the handle next to each one in **Settings → Accounts**. The same order is used on Home, in the add form, and in Settings. New accounts go to the end.
+- Deleting an account that already has transactions archives it instead. It disappears from the form and the Home card, its history stays, and you can bring it back from Settings.
+
+**Transfers between accounts**
+
+- Once you have two or more accounts, the add form gains a **TRANSFER** type: pick **From**, **To**, and the amount. A transfer moves money between your own accounts and is not counted as income or expense.
+- An optional **Admin fee** (for example Rp 2.500 for an e-wallet top-up) is recorded as an expense from the source account, under the new **Admin Fee** category. Your balance stays exact and the fee still shows in your spending.
+- In the list, a transfer reads `BCA → Dana` in a neutral color. Tapping its Admin Fee row opens the transfer, and deleting the transfer deletes its fee too.
+
+**Adjust balance**
+
+When an account drifts from reality, for example because of a forgotten cash purchase, bank interest, or cashback, open the account, tap **Adjust balance**, and enter the real balance. The app shows the difference before saving and records it as an **Adjustment**. Adjustments correct the balance but are left out of income, expense, the chart, and the category breakdown.
+
+**Expense by account**
+
+The Chart tab has a new **Expense by account** card under the chart. It follows the selected week, month, year, or salary period. Expenses recorded before accounts existed appear as **No account**. The card stays hidden until at least one expense in that range has an account.
+
+**Brand colors for common accounts**
+
+The account color picker starts with muted versions of the BCA, DANA, GoPay, Jago, and cash colors, toned down to match the retro palette. When you create an account named BCA, Dana, GoPay, Jago, Cash, or Tunai, its color is picked for you. Choosing a color yourself turns this off.
+
+### Changed
+
+- **Transaction rows show their account** next to the category, for example `COFFEE · GOPAY`.
+- **The day header on the Transactions tab** adds up only income and expense. Transfers and adjustments are not counted.
+- **Forgot PIN** now also erases accounts, and starts again with 19 default categories (the 18 from before plus Admin Fee).
+- **Google Sheets backup** gains an **Accounts** tab and three account columns on the **Transactions** tab.
+
+### Fixed
+
+- **Chart showed old numbers after a restore or a Forgot PIN erase.** It kept the data from before until a transaction was saved or the app was restarted. It now refreshes together with Home and the Transactions list.
+
+### Upgrade notes
+
+- **Automatic database upgrade (schema 1 → 3).** It runs once on first launch. No transaction, category, or salary period is changed.
+- **Existing transactions have no account.** They stay in your history, totals, and chart, labelled **No account**, but they do not count toward any account balance. This is why the opening balance should be today's real balance. Editing an old transaction keeps it on **No account** unless you pick an account yourself.
+- **New category: Admin Fee.** It is added once during the upgrade, and fresh installs now start with 19 default categories. If you delete or rename it, it is created again the next time a transfer has a fee.
+- **Backups.** The first backup after updating adds an **Accounts** tab to your spreadsheet. Backups made by older versions still restore; they just bring no accounts. Restoring a 1.1.0 backup into an older version is not supported: the older app does not know transfers or adjustments and would show them as expenses on the Transactions tab.
+- **Known limitation:** opening balances and Adjust balance accept only zero or positive amounts.
+- **Known limitation:** search on the Transactions tab matches descriptions and categories, not account names.
+- **Known limitation:** if a transfer re-creates the Admin Fee category, it only appears in Settings and the category picker after the app is restarted.
+
+### Store listing blurb
+
+> **Track every account.** Add your bank accounts, e-wallets, and cash, see each balance on Home, and move money between them with transfers, admin fees included.
+>
+> Also: fix a drifting balance with Adjust balance, and see which account you spent from on the Chart tab.
+
+---
+
 ## 1.0.5 — unreleased
 
 Covers everything merged after 1.0.4. This release is mostly a visual refresh: a new navigation bar, a terminal-style PIN lock, and a new app icon. It also fixes stale Home and Chart data after saving a transaction, and stops Android from bringing back an old copy of the app's data after a reinstall. There is no database schema change and no new permission.
