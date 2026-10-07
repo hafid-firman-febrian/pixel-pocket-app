@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
@@ -10,8 +12,11 @@ import 'package:pixel_pocket/core/utils/thousands_input_formatter.dart';
 import 'package:pixel_pocket/core/widgets/pixel_bottom_sheet.dart';
 import 'package:pixel_pocket/core/widgets/pixel_button.dart';
 import 'package:pixel_pocket/core/widgets/pixel_field_label.dart';
+import 'package:pixel_pocket/core/widgets/pixel_select_chip.dart';
 import 'package:pixel_pocket/core/widgets/pixel_snack_bar.dart';
 import 'package:pixelarticons/pixel.dart';
+import 'package:pixel_pocket/features/accounts/domain/models/account_model.dart';
+import 'package:pixel_pocket/features/accounts/presentation/states/account_state.dart';
 import 'package:pixel_pocket/features/categories/domain/models/category_model.dart';
 import 'package:pixel_pocket/features/categories/presentation/states/category_state.dart';
 import 'package:pixel_pocket/features/transactions/domain/models/transaction_model.dart';
@@ -23,8 +28,6 @@ class TransactionFormSheet extends ConsumerStatefulWidget {
 
   final TransactionModel? existing;
 
-  
-  
   final DateTime? initialDate;
 
   bool get isEditing => existing != null;
@@ -51,11 +54,17 @@ class _TransactionFormSheetState extends ConsumerState<TransactionFormSheet> {
   final _dateFormat = DateFormat('yyyy-MM-dd');
 
   late final TextEditingController _amountController;
+  late final TextEditingController _feeController;
   late final TextEditingController _descriptionController;
 
   late String _type;
   late DateTime _date;
   int? _categoryId;
+  int? _accountId;
+  int? _toAccountId;
+  late final bool _allowNoAccount;
+
+  bool get _isTransfer => _type == 'transfer';
 
   @override
   void initState() {
@@ -66,12 +75,21 @@ class _TransactionFormSheetState extends ConsumerState<TransactionFormSheet> {
         ? (DateTime.tryParse(existing.transactionDate) ?? _todayFloor())
         : (widget.initialDate ?? ref.read(rangeFilterProvider).defaultEntryDate);
     _categoryId = existing?.categoryId;
+    _accountId = existing?.accountId;
+    _toAccountId = existing?.toAccountId;
+    _allowNoAccount =
+        existing != null && !existing.isTransfer && existing.accountId == null;
     _amountController = TextEditingController(
       text: existing != null ? CurrencyFormatter.input(existing.amount) : '0',
+    );
+    final fee = existing?.feeAmount ?? 0;
+    _feeController = TextEditingController(
+      text: fee > 0 ? CurrencyFormatter.input(fee) : '0',
     );
     _descriptionController = TextEditingController(
       text: existing?.description ?? '',
     );
+    if (existing == null) unawaited(_applyDefaultAccount());
   }
 
   DateTime _todayFloor() {
@@ -82,8 +100,31 @@ class _TransactionFormSheetState extends ConsumerState<TransactionFormSheet> {
   @override
   void dispose() {
     _amountController.dispose();
+    _feeController.dispose();
     _descriptionController.dispose();
     super.dispose();
+  }
+
+  Future<void> _applyDefaultAccount() async {
+    final transfer = _isTransfer;
+    final int? id;
+    try {
+      id = await ref.read(lastUsedAccountIdProvider(transfer).future);
+    } catch (_) {
+      return;
+    }
+    if (!mounted || _isTransfer != transfer || _accountId != null) return;
+    setState(() => _accountId = id);
+  }
+
+  List<AccountModel> _accountOptions(List<AccountModel> all) {
+    final keep = {widget.existing?.accountId, widget.existing?.toAccountId};
+    return all.where((a) => !a.isArchived || keep.contains(a.id)).toList();
+  }
+
+  bool get _accountRequired {
+    final all = ref.read(accountsProvider).valueOrNull ?? const <AccountModel>[];
+    return _accountOptions(all).isNotEmpty && !_allowNoAccount;
   }
 
   Future<void> _pickDate() async {
@@ -111,7 +152,6 @@ class _TransactionFormSheetState extends ConsumerState<TransactionFormSheet> {
 
   void _setAmount(int value) {
     final clamped = value < 0 ? 0 : value;
-    
     final text = clamped == 0
         ? '0'
         : CurrencyFormatter.input(clamped.toDouble());
@@ -125,31 +165,63 @@ class _TransactionFormSheetState extends ConsumerState<TransactionFormSheet> {
 
   Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) return;
-    if (_categoryId == null) {
-      _showSnack('Please select a category first', isError: true);
-      return;
-    }
 
     final amount = CurrencyFormatter.parse(_amountController.text);
     final description = _descriptionController.text.trim();
+    final note = description.isEmpty ? null : description;
+    final date = _dateFormat.format(_date);
     final controller = ref.read(transactionsControllerProvider.notifier);
+    final existing = widget.existing;
 
-    final ok = widget.isEditing
-        ? await controller.edit(
-            id: widget.existing!.id,
-            transactionDate: _dateFormat.format(_date),
-            transactionType: _type,
-            amount: amount,
-            categoryId: _categoryId,
-            description: description.isEmpty ? null : description,
-          )
-        : await controller.create(
-            transactionDate: _dateFormat.format(_date),
-            transactionType: _type,
-            amount: amount,
-            categoryId: _categoryId,
-            description: description.isEmpty ? null : description,
-          );
+    final bool ok;
+    if (_isTransfer) {
+      final fee = CurrencyFormatter.parse(_feeController.text);
+      ok = existing != null
+          ? await controller.editTransfer(
+              id: existing.id,
+              transactionDate: date,
+              amount: amount,
+              fromAccountId: _accountId,
+              toAccountId: _toAccountId,
+              fee: fee,
+              description: note,
+            )
+          : await controller.createTransfer(
+              transactionDate: date,
+              amount: amount,
+              fromAccountId: _accountId,
+              toAccountId: _toAccountId,
+              fee: fee,
+              description: note,
+            );
+    } else {
+      if (_categoryId == null) {
+        _showSnack('Please select a category first', isError: true);
+        return;
+      }
+      if (_accountRequired && _accountId == null) {
+        _showSnack('Please select an account first', isError: true);
+        return;
+      }
+      ok = existing != null
+          ? await controller.edit(
+              id: existing.id,
+              transactionDate: date,
+              transactionType: _type,
+              amount: amount,
+              categoryId: _categoryId,
+              accountId: _accountId,
+              description: note,
+            )
+          : await controller.create(
+              transactionDate: date,
+              transactionType: _type,
+              amount: amount,
+              categoryId: _categoryId,
+              accountId: _accountId,
+              description: note,
+            );
+    }
 
     if (!mounted) return;
     if (ok) {
@@ -170,7 +242,15 @@ class _TransactionFormSheetState extends ConsumerState<TransactionFormSheet> {
   @override
   Widget build(BuildContext context) {
     final categoriesAsync = ref.watch(categoriesProvider);
+    final accounts =
+        ref.watch(accountsProvider).valueOrNull ?? const <AccountModel>[];
+    final options = _accountOptions(accounts);
     final isSubmitting = ref.watch(transactionsControllerProvider).isLoading;
+    final existing = widget.existing;
+    final showIncomeExpense = existing == null || !existing.isTransfer;
+    final showTransfer = existing == null
+        ? accounts.where((a) => !a.isArchived).length >= 2
+        : existing.isTransfer;
 
     return PixelBottomSheetFrame(
       title: widget.isEditing ? 'EDIT TRANSACTION' : 'NEW TRANSACTION',
@@ -184,30 +264,23 @@ class _TransactionFormSheetState extends ConsumerState<TransactionFormSheet> {
             children: [
               Row(
                 children: [
-                  Expanded(
-                    child: PixelButton(
-                      label: 'EXPENSE',
-                      isFullWidth: true,
-
-                      variant: _type == 'expense'
-                          ? PixelButtonVariant.expense
-                          : PixelButtonVariant.surface,
-                      pressed: _type == 'expense',
-                      onPressed: () => _setType('expense'),
+                  if (showIncomeExpense) ...[
+                    _typeButton(
+                      'expense',
+                      'EXPENSE',
+                      PixelButtonVariant.expense,
                     ),
-                  ),
-                  const SizedBox(width: AppSpacing.s12),
-                  Expanded(
-                    child: PixelButton(
-                      label: 'INCOME',
-                      isFullWidth: true,
-                      variant: _type == 'income'
-                          ? PixelButtonVariant.income
-                          : PixelButtonVariant.surface,
-                      pressed: _type == 'income',
-                      onPressed: () => _setType('income'),
+                    const SizedBox(width: AppSpacing.s12),
+                    _typeButton('income', 'INCOME', PixelButtonVariant.income),
+                  ],
+                  if (showIncomeExpense && showTransfer)
+                    const SizedBox(width: AppSpacing.s12),
+                  if (showTransfer)
+                    _typeButton(
+                      'transfer',
+                      'TRANSFER',
+                      PixelButtonVariant.primary,
                     ),
-                  ),
                 ],
               ),
 
@@ -295,7 +368,6 @@ class _TransactionFormSheetState extends ConsumerState<TransactionFormSheet> {
                   for (final (label, value) in _quickAmounts)
                     PixelButton(
                       label: label,
-
                       variant: PixelButtonVariant.surface,
                       size: PixelButtonSize.sm,
                       onPressed: () => _bumpAmount(value),
@@ -305,45 +377,10 @@ class _TransactionFormSheetState extends ConsumerState<TransactionFormSheet> {
 
               const SizedBox(height: AppSpacing.section),
 
-              const PixelFieldLabel('CATEGORY'),
-              categoriesAsync.when(
-                loading: () => const LinearProgressIndicator(),
-                error: (e, _) => Text(
-                  'Failed to load categories: $e',
-                  style: const TextStyle(color: AppColors.expense),
-                ),
-                data: (all) {
-                  final options = _categoriesForType(all);
-                  final validIds = options.map((c) => c.id).toSet();
-                  final value = validIds.contains(_categoryId)
-                      ? _categoryId
-                      : null;
-                  return DropdownButtonFormField<int>(
-                    initialValue: value,
-                    isExpanded: true,
-                    items: options
-                        .map(
-                          (c) => DropdownMenuItem(
-                            value: c.id,
-                            child: Row(
-                              children: [
-                                Container(
-                                  width: 14,
-                                  height: 14,
-                                  color: AppColors.fromHex(c.color),
-                                ),
-                                const SizedBox(width: 10),
-                                Text(c.name),
-                              ],
-                            ),
-                          ),
-                        )
-                        .toList(),
-                    onChanged: (id) => setState(() => _categoryId = id),
-                  );
-                },
-              ),
-              const SizedBox(height: AppSpacing.section),
+              if (_isTransfer)
+                ..._transferFields(options)
+              else
+                ..._entryFields(categoriesAsync, options),
 
               const PixelFieldLabel('DESCRIPTION (OPTIONAL)'),
               TextFormField(controller: _descriptionController, maxLines: 2),
@@ -371,11 +408,160 @@ class _TransactionFormSheetState extends ConsumerState<TransactionFormSheet> {
     );
   }
 
+  List<Widget> _entryFields(
+    AsyncValue<List<CategoryModel>> categoriesAsync,
+    List<AccountModel> options,
+  ) {
+    return [
+      if (options.isNotEmpty) ...[
+        const PixelFieldLabel('ACCOUNT'),
+        _AccountChips(
+          accounts: options,
+          selectedId: _accountId,
+          noAccountLabel: _allowNoAccount ? 'No account' : null,
+          onSelected: (id) => setState(() => _accountId = id),
+        ),
+        const SizedBox(height: AppSpacing.section),
+      ],
+      const PixelFieldLabel('CATEGORY'),
+      categoriesAsync.when(
+        loading: () => const LinearProgressIndicator(),
+        error: (e, _) => Text(
+          'Failed to load categories: $e',
+          style: const TextStyle(color: AppColors.expense),
+        ),
+        data: (all) {
+          final categories = _categoriesForType(all);
+          final validIds = categories.map((c) => c.id).toSet();
+          final value = validIds.contains(_categoryId) ? _categoryId : null;
+          return DropdownButtonFormField<int>(
+            initialValue: value,
+            isExpanded: true,
+            items: categories
+                .map(
+                  (c) => DropdownMenuItem(
+                    value: c.id,
+                    child: Row(
+                      children: [
+                        Container(
+                          width: 14,
+                          height: 14,
+                          color: AppColors.fromHex(c.color),
+                        ),
+                        const SizedBox(width: 10),
+                        Text(c.name),
+                      ],
+                    ),
+                  ),
+                )
+                .toList(),
+            onChanged: (id) => setState(() => _categoryId = id),
+          );
+        },
+      ),
+      const SizedBox(height: AppSpacing.section),
+    ];
+  }
+
+  List<Widget> _transferFields(List<AccountModel> options) {
+    return [
+      const PixelFieldLabel('FROM'),
+      _AccountChips(
+        accounts: options,
+        selectedId: _accountId,
+        onSelected: (id) => setState(() {
+          _accountId = id;
+          if (_toAccountId == id) _toAccountId = null;
+        }),
+      ),
+      const SizedBox(height: AppSpacing.section),
+      const PixelFieldLabel('TO'),
+      _AccountChips(
+        accounts: options.where((a) => a.id != _accountId).toList(),
+        selectedId: _toAccountId,
+        onSelected: (id) => setState(() => _toAccountId = id),
+      ),
+      const SizedBox(height: AppSpacing.section),
+      const PixelFieldLabel('ADMIN FEE (OPTIONAL)'),
+      TextFormField(
+        controller: _feeController,
+        keyboardType: TextInputType.number,
+        inputFormatters: const [ThousandsInputFormatter()],
+        style: AppTextStyles.numericMd,
+        decoration: const InputDecoration(
+          prefixText: 'Rp ',
+          isDense: true,
+          contentPadding: EdgeInsets.symmetric(
+            horizontal: AppSpacing.s12,
+            vertical: AppSpacing.s12,
+          ),
+        ),
+      ),
+      const SizedBox(height: AppSpacing.section),
+    ];
+  }
+
+  Widget _typeButton(String value, String label, PixelButtonVariant variant) {
+    final selected = _type == value;
+    return Expanded(
+      child: PixelButton(
+        label: label,
+        isFullWidth: true,
+        variant: selected ? variant : PixelButtonVariant.surface,
+        pressed: selected,
+        onPressed: () => _setType(value),
+      ),
+    );
+  }
+
   void _setType(String type) {
     if (_type == type) return;
+    final crossesTransfer = type == 'transfer' || _isTransfer;
     setState(() {
       _type = type;
       _categoryId = null;
+      if (crossesTransfer) {
+        _accountId = null;
+        _toAccountId = null;
+      }
     });
+    if (crossesTransfer) unawaited(_applyDefaultAccount());
+  }
+}
+
+class _AccountChips extends StatelessWidget {
+  const _AccountChips({
+    required this.accounts,
+    required this.selectedId,
+    required this.onSelected,
+    this.noAccountLabel,
+  });
+
+  final List<AccountModel> accounts;
+  final int? selectedId;
+  final ValueChanged<int?> onSelected;
+  final String? noAccountLabel;
+
+  @override
+  Widget build(BuildContext context) {
+    final noAccount = noAccountLabel;
+    return Wrap(
+      spacing: AppSpacing.s6,
+      runSpacing: AppSpacing.s6,
+      children: [
+        if (noAccount != null)
+          PixelSelectChip(
+            label: noAccount,
+            selected: selectedId == null,
+            onTap: () => onSelected(null),
+          ),
+        for (final a in accounts)
+          PixelSelectChip(
+            label: a.name,
+            selected: a.id == selectedId,
+            onTap: () => onSelected(a.id),
+          ),
+      ],
+    );
   }
 }

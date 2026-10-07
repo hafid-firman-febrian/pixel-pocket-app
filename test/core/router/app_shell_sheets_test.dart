@@ -6,6 +6,8 @@ import 'package:go_router/go_router.dart';
 import 'package:pixel_pocket/core/router/app_router.dart';
 import 'package:pixel_pocket/core/widgets/pixel_bottom_nav.dart';
 import 'package:pixel_pocket/core/widgets/pixel_button.dart';
+import 'package:pixel_pocket/features/accounts/domain/models/account_model.dart';
+import 'package:pixel_pocket/features/accounts/presentation/states/account_state.dart';
 import 'package:pixel_pocket/features/categories/domain/models/category_model.dart';
 import 'package:pixel_pocket/features/categories/presentation/states/category_state.dart';
 import 'package:pixel_pocket/features/transactions/domain/models/transaction_model.dart';
@@ -64,6 +66,8 @@ Widget _app() {
   return ProviderScope(
     overrides: [
       categoriesProvider.overrideWith((ref) async => const <CategoryModel>[]),
+      accountsProvider.overrideWith((ref) async => const <AccountModel>[]),
+      lastUsedAccountIdProvider.overrideWith((ref, transfer) async => null),
       transactionsControllerProvider.overrideWith(
         _IdleTransactionsController.new,
       ),
