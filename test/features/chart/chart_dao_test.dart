@@ -47,4 +47,18 @@ void main() {
     expect(data.expense[0], 200);
     expect(data.expense[2], 50);
   });
+
+  test('transfers and adjustments are not plotted', () async {
+    await db.into(db.transactions).insert(TransactionsCompanion.insert(
+        transactionDate: '2026-07-10', transactionType: 'transfer', amount: 999,
+        accountId: const Value(1), toAccountId: const Value(2)));
+    await db.into(db.transactions).insert(TransactionsCompanion.insert(
+        transactionDate: '2026-07-10', transactionType: 'adjustment', amount: -999,
+        accountId: const Value(1)));
+
+    final data = await dao.getChart(filter: 'month', today: DateTime(2026, 7, 15));
+    final i10 = data.labels.indexOf('2026-07-10');
+    expect(data.income[i10], 500);
+    expect(data.expense[i10], 200);
+  });
 }

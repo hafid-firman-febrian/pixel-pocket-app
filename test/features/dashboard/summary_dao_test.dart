@@ -48,4 +48,34 @@ void main() {
     expect(s.totalIncome, 0);
     expect(s.transactionCount, 1);
   });
+
+  test('transfers and adjustments stay out of the totals and the count', () async {
+    await db.into(db.transactions).insert(TransactionsCompanion.insert(
+        transactionDate: '2026-07-04', transactionType: 'transfer', amount: 5000,
+        accountId: const Value(1), toAccountId: const Value(2)));
+    await db.into(db.transactions).insert(TransactionsCompanion.insert(
+        transactionDate: '2026-07-04', transactionType: 'adjustment', amount: -700,
+        accountId: const Value(1)));
+
+    final s = await dao.getSummary(null);
+    expect(s.totalIncome, 1000);
+    expect(s.totalExpense, 400);
+    expect(s.balance, 600);
+    expect(s.transactionCount, 3);
+    final byCategory = await dao.getByCategory(null);
+    expect(byCategory.fold<double>(0, (sum, c) => sum + c.total), 400);
+  });
+
+  test('an admin fee counts as an expense in its own category', () async {
+    final feeCategory = await db.adminFeeCategoryId();
+    await db.into(db.transactions).insert(TransactionsCompanion.insert(
+        transactionDate: '2026-07-04', transactionType: 'expense', amount: 2500,
+        categoryId: Value(feeCategory), linkedTransactionId: const Value(1)));
+
+    final s = await dao.getSummary(null);
+    expect(s.totalExpense, 2900);
+    expect(s.transactionCount, 4);
+    final fee = (await dao.getByCategory(null)).firstWhere((c) => c.categoryId == feeCategory);
+    expect(fee.total, 2500);
+  });
 }

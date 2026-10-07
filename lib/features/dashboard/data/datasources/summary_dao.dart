@@ -29,15 +29,21 @@ class SummaryDao {
     final rows = await _rows(salaryPeriodId);
     var income = 0.0;
     var expense = 0.0;
+    var count = 0;
     for (final r in rows) {
-      if (r.transactionType == 'income') income += r.amount;
-      if (r.transactionType == 'expense') expense += r.amount;
+      if (r.transactionType == 'income') {
+        income += r.amount;
+        count++;
+      } else if (r.transactionType == 'expense') {
+        expense += r.amount;
+        count++;
+      }
     }
     return TransactionSummary(
       totalIncome: income,
       totalExpense: expense,
       balance: income - expense,
-      transactionCount: rows.length,
+      transactionCount: count,
     );
   }
 
