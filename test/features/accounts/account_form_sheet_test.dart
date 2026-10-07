@@ -66,10 +66,10 @@ void main() {
   testWidgets('saving sends the name, color and opening balance',
       (tester) async {
     await open(tester);
-    await tester.enterText(find.byType(TextFormField).at(0), 'Cash');
+    await tester.enterText(find.byType(TextFormField).at(0), 'Dompet');
     await tester.enterText(find.byType(TextFormField).at(1), '85000');
     await save(tester);
-    expect(controller.created, [('Cash', pixelColorPalette.first, 85000.0)]);
+    expect(controller.created, [('Dompet', pixelColorPalette.first, 85000.0)]);
     expect(find.text('NEW ACCOUNT'), findsNothing);
   });
 
@@ -81,5 +81,37 @@ void main() {
     await tester.enterText(find.byType(TextFormField).at(0), 'Cash');
     await save(tester);
     expect(find.text('An account named "Cash" already exists.'), findsOneWidget);
+  });
+
+  testWidgets('typing a brand name picks its color', (tester) async {
+    await open(tester);
+    await tester.enterText(find.byType(TextFormField).at(0), 'Dana');
+    await save(tester);
+    expect(controller.created.single.$2, '#4791C2');
+  });
+
+  testWidgets('a color picked by hand is kept when the name changes',
+      (tester) async {
+    await open(tester);
+    final swatch = find.byKey(ValueKey(pixelColorPalette[3]));
+    await tester.ensureVisible(swatch);
+    await tester.tap(swatch);
+    await tester.pump();
+    await tester.enterText(find.byType(TextFormField).at(0), 'Dana');
+    await save(tester);
+    expect(controller.created.single.$2, pixelColorPalette[3]);
+  });
+
+  testWidgets('brand colors come first in the picker', (tester) async {
+    await open(tester);
+    final picker = tester.widget<PixelColorPicker>(find.byType(PixelColorPicker));
+    expect(picker.palette.take(5), [
+      '#386694',
+      '#4791C2',
+      '#46A6B9',
+      '#D8A246',
+      '#46915F',
+    ]);
+    expect(picker.palette.skip(5), pixelColorPalette);
   });
 }

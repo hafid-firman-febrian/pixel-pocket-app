@@ -28,10 +28,12 @@ class PixelColorPicker extends StatelessWidget {
     super.key,
     required this.selected,
     required this.onChanged,
+    this.palette = pixelColorPalette,
   });
 
   final String selected;
   final ValueChanged<String> onChanged;
+  final List<String> palette;
 
   @override
   Widget build(BuildContext context) {
@@ -39,7 +41,7 @@ class PixelColorPicker extends StatelessWidget {
       spacing: AppSpacing.s8,
       runSpacing: AppSpacing.s8,
       children: [
-        for (final hex in pixelColorPalette)
+        for (final hex in palette)
           _ColorSwatch(
             key: ValueKey(hex),
             hex: hex,

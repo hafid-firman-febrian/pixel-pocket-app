@@ -18,4 +18,21 @@ void main() {
     await tester.tap(find.byKey(ValueKey(pixelColorPalette[3])));
     expect(picked, pixelColorPalette[3]);
   });
+
+  testWidgets('shows the palette it is given', (tester) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: PixelColorPicker(
+            palette: const ['#386694', '#4791C2'],
+            selected: '#386694',
+            onChanged: (_) {},
+          ),
+        ),
+      ),
+    );
+    expect(find.byKey(const ValueKey('#386694')), findsOneWidget);
+    expect(find.byKey(const ValueKey('#4791C2')), findsOneWidget);
+    expect(find.byKey(ValueKey(pixelColorPalette.first)), findsNothing);
+  });
 }

@@ -10,6 +10,7 @@ import 'package:pixel_pocket/core/widgets/pixel_button.dart';
 import 'package:pixel_pocket/core/widgets/pixel_color_picker.dart';
 import 'package:pixel_pocket/core/widgets/pixel_field_label.dart';
 import 'package:pixel_pocket/core/widgets/pixel_snack_bar.dart';
+import 'package:pixel_pocket/features/accounts/domain/models/account_brand_colors.dart';
 import 'package:pixel_pocket/features/accounts/domain/models/account_model.dart';
 import 'package:pixel_pocket/features/accounts/presentation/controllers/account_controller.dart';
 
@@ -32,11 +33,14 @@ class AccountFormSheet extends ConsumerStatefulWidget {
 }
 
 class _AccountFormSheetState extends ConsumerState<AccountFormSheet> {
+  static const _palette = [...accountBrandPalette, ...pixelColorPalette];
+
   final _formKey = GlobalKey<FormState>();
   final _nameController = TextEditingController();
   late final TextEditingController _openingController;
 
   late String _color;
+  late bool _colorPicked;
   bool _saving = false;
 
   @override
@@ -45,10 +49,16 @@ class _AccountFormSheetState extends ConsumerState<AccountFormSheet> {
     final existing = widget.existing;
     _nameController.text = existing?.name ?? '';
     _color = existing?.color ?? pixelColorPalette.first;
+    _colorPicked = existing != null;
     final opening = existing?.openingBalance ?? 0;
     _openingController = TextEditingController(
       text: opening > 0 ? CurrencyFormatter.input(opening) : '0',
     );
+  }
+
+  void _onNameChanged(String name) {
+    if (_colorPicked) return;
+    setState(() => _color = brandColorFor(name) ?? pixelColorPalette.first);
   }
 
   @override
@@ -107,6 +117,7 @@ class _AccountFormSheetState extends ConsumerState<AccountFormSheet> {
               TextFormField(
                 controller: _nameController,
                 textCapitalization: TextCapitalization.words,
+                onChanged: _onNameChanged,
                 validator: (v) =>
                     (v == null || v.trim().isEmpty) ? 'Enter a name' : null,
               ),
@@ -125,8 +136,12 @@ class _AccountFormSheetState extends ConsumerState<AccountFormSheet> {
               const SizedBox(height: AppSpacing.section),
               const PixelFieldLabel('COLOR'),
               PixelColorPicker(
+                palette: _palette,
                 selected: _color,
-                onChanged: (hex) => setState(() => _color = hex),
+                onChanged: (hex) => setState(() {
+                  _color = hex;
+                  _colorPicked = true;
+                }),
               ),
               const SizedBox(height: AppSpacing.s24),
               PixelButton(
