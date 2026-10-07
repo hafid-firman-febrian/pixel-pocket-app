@@ -15,6 +15,8 @@ import 'package:pixel_pocket/core/widgets/pixel_confirm_dialog.dart';
 import 'package:pixel_pocket/core/widgets/pixel_error_view.dart';
 import 'package:pixel_pocket/core/widgets/pixel_snack_bar.dart';
 import 'package:pixel_pocket/features/categories/presentation/states/category_state.dart';
+import 'package:pixel_pocket/features/transactions/application/services/transaction_service.dart';
+import 'package:pixel_pocket/features/transactions/domain/models/day_totals.dart';
 import 'package:pixel_pocket/features/transactions/domain/models/transaction_model.dart';
 import 'package:pixel_pocket/features/transactions/presentation/controllers/transaction_controller.dart';
 import 'package:pixel_pocket/features/transactions/presentation/screens/widgets/transaction_form_sheet.dart';
@@ -109,20 +111,12 @@ class TransactionScreen extends ConsumerWidget {
     for (var g = 0; g < groups.length; g++) {
       if (g > 0) children.add(const SizedBox(height: AppSpacing.section));
       final group = groups[g];
-      var income = 0.0;
-      var expense = 0.0;
-      for (final tx in group.value) {
-        if (tx.isIncome) {
-          income += tx.amount;
-        } else {
-          expense += tx.amount;
-        }
-      }
+      final totals = DayTotals.of(group.value);
       children.add(
         _DateGroupCard(
           date: group.key,
-          income: income,
-          expense: expense,
+          income: totals.income,
+          expense: totals.expense,
           items: [
             for (var i = 0; i < group.value.length; i++) ...[
               if (i > 0) const Divider(height: 1, color: AppColors.border),
@@ -188,9 +182,36 @@ class TransactionScreen extends ConsumerWidget {
       onDismissed: (_) => _delete(context, ref, tx),
       child: TransactionListItem(
         transaction: tx,
-        onTap: () => TransactionFormSheet.show(context, existing: tx),
+        onTap: () => _open(context, ref, tx),
       ),
     );
+  }
+
+  Future<void> _open(
+    BuildContext context,
+    WidgetRef ref,
+    TransactionModel tx,
+  ) async {
+    if (tx.isAdjustment) {
+      if (await _confirmDelete(context) && context.mounted) {
+        await _delete(context, ref, tx);
+      }
+      return;
+    }
+    final parentId = tx.linkedTransactionId;
+    if (parentId == null) {
+      await TransactionFormSheet.show(context, existing: tx);
+      return;
+    }
+    final messenger = ScaffoldMessenger.of(context);
+    try {
+      final parent =
+          await ref.read(transactionServiceProvider).getById(parentId);
+      if (!context.mounted) return;
+      await TransactionFormSheet.show(context, existing: parent);
+    } on Failure catch (e) {
+      messenger.showPixelSnackBar(e.message, isError: true);
+    }
   }
 
   Widget _deleteBackground() {

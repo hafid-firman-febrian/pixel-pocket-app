@@ -7,25 +7,63 @@ import 'package:pixel_pocket/core/utils/currency_formatter.dart';
 import 'package:pixel_pocket/features/transactions/domain/models/transaction_model.dart';
 
 class TransactionListItem extends StatelessWidget {
-  const TransactionListItem({super.key, required this.transaction, this.onTap});
+  const TransactionListItem({
+    super.key,
+    required this.transaction,
+    this.onTap,
+    this.perspectiveAccountId,
+  });
 
   final TransactionModel transaction;
   final VoidCallback? onTap;
+  final int? perspectiveAccountId;
+
+  bool get _neutral => transaction.isTransfer || transaction.isAdjustment;
+
+  bool get _hasDescription => transaction.description?.isNotEmpty ?? false;
+
+  String get _route =>
+      '${transaction.accountName ?? '?'} → ${transaction.toAccountName ?? '?'}';
+
+  String get _title {
+    final tx = transaction;
+    if (_hasDescription) return tx.description!;
+    if (tx.isTransfer) return _route;
+    if (tx.isAdjustment) return 'Adjustment';
+    return tx.categoryName ?? 'Uncategorized';
+  }
+
+  String? get _subtitle {
+    final tx = transaction;
+    if (tx.isTransfer) return _hasDescription ? _route : null;
+    if (tx.isAdjustment) return tx.accountName;
+    final parts = [
+      if (_hasDescription && tx.categoryName != null) tx.categoryName!,
+      if (tx.accountName != null) tx.accountName!,
+    ];
+    return parts.isEmpty ? null : parts.join(' · ');
+  }
+
+  String get _amountText {
+    final tx = transaction;
+    final value = _thousands(tx.amount.abs());
+    if (tx.isAdjustment) return '${tx.amount < 0 ? '-' : '+'}$value';
+    if (tx.isTransfer) {
+      if (perspectiveAccountId == null) return value;
+      return '${perspectiveAccountId == tx.toAccountId ? '+' : '-'}$value';
+    }
+    return '${tx.isIncome ? '+' : '-'}$value';
+  }
 
   @override
   Widget build(BuildContext context) {
-    final color = AppColors.fromHex(transaction.categoryColor);
-    final isIncome = transaction.isIncome;
-
-    final hasDescription = transaction.description?.isNotEmpty ?? false;
-    final title = hasDescription
-        ? transaction.description!
-        : (transaction.categoryName ?? 'Uncategorized');
-
-    final categoryLabel = hasDescription ? transaction.categoryName : null;
-
-    final amountText =
-        '${isIncome ? '+' : '-'}${_thousands(transaction.amount)}';
+    final barColor = _neutral
+        ? AppColors.textMuted
+        : AppColors.fromHex(transaction.categoryColor);
+    final amountColor = _neutral
+        ? AppColors.textPrimary
+        : (transaction.isIncome ? AppColors.income : AppColors.expense);
+    final subtitle = _subtitle;
 
     return InkWell(
       onTap: onTap,
@@ -38,7 +76,7 @@ class TransactionListItem extends StatelessWidget {
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              Container(width: 4, color: color),
+              Container(width: 4, color: barColor),
               const SizedBox(width: AppSpacing.s12),
               Expanded(
                 child: Column(
@@ -46,7 +84,7 @@ class TransactionListItem extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      title,
+                      _title,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: AppTextStyles.bodyNormal.copyWith(
@@ -54,10 +92,10 @@ class TransactionListItem extends StatelessWidget {
                         fontWeight: FontWeight.w700,
                       ),
                     ),
-                    if (categoryLabel != null) ...[
+                    if (subtitle != null) ...[
                       const SizedBox(height: AppSpacing.s2),
                       Text(
-                        categoryLabel.toUpperCase(),
+                        subtitle.toUpperCase(),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: AppTextStyles.overlineSm.copyWith(
@@ -74,10 +112,10 @@ class TransactionListItem extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
                   Text(
-                    amountText,
+                    _amountText,
                     style: AppTextStyles.bodyNormal.copyWith(
                       fontWeight: FontWeight.w900,
-                      color: isIncome ? AppColors.income : AppColors.expense,
+                      color: amountColor,
                     ),
                   ),
                   const SizedBox(height: AppSpacing.s2),
