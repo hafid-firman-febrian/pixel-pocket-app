@@ -1,8 +1,6 @@
 <div align="center">
 
-# Pixel Pocket
-
-**Local-first personal finance, in pixels.**
+<img src="docs/banner.png" width="70%" alt="Pixel Pocket — offline-first finance app, shown on the Dashboard, Chart, and Transactions screens">
 
 ![Flutter](https://img.shields.io/badge/Flutter-3.x-1E1E1E?style=flat-square&logo=flutter&logoColor=54C5F8)
 ![Dart](https://img.shields.io/badge/Dart-3.10-1E1E1E?style=flat-square&logo=dart&logoColor=40C4FF)
@@ -13,7 +11,7 @@
 
 </div>
 
-Pixel Pocket records daily transactions, summarises balances, breaks spending down by category, and charts it over time. Every screen is computed on-device from an embedded SQLite database (Drift), so the app works **fully offline with no account and no backend to run**. Google Sheets is supported purely as an *optional* backup target for moving data between devices.
+Pixel Pocket records daily transactions across your bank accounts, e-wallets, and cash, summarises balances, breaks spending down by category and by account, and charts it over time. Every screen is computed on-device from an embedded SQLite database (Drift), so the app works **fully offline with no sign-up and no backend to run**. Google Sheets is supported purely as an *optional* backup target for moving data between devices.
 
 ---
 
@@ -39,7 +37,7 @@ Pixel Pocket records daily transactions, summarises balances, breaks spending do
 The four main tabs and the PIN lock, captured on an iPhone simulator with seeded demo data:
 
 <p align="center">
-  <img src="docs/screenshots/dashboard.png" width="19%" alt="Dashboard — period filter, balance summary, expenses by category">
+  <img src="docs/screenshots/dashboard.png" width="19%" alt="Dashboard — period filter, balance summary, current balance per account">
   <img src="docs/screenshots/transactions.png" width="19%" alt="Transactions — search, range filters, and a week of daily groups">
   <img src="docs/screenshots/chart.png" width="19%" alt="Chart — yearly income vs. expense time series">
   <img src="docs/screenshots/settings.png" width="19%" alt="Settings — salary periods and category management">
@@ -48,10 +46,10 @@ The four main tabs and the PIN lock, captured on an iPhone simulator with seeded
 
 From left to right:
 
-- **Dashboard** — period filter, balance summary, expenses by category, recent activity
+- **Dashboard** — period filter, balance summary, current balance per account, expenses by category, recent activity
 - **Transactions** — search, range filters, daily groups
-- **Chart** — income vs. expense time series (`fl_chart`)
-- **Settings** — salary periods, categories, backup, PIN reset
+- **Chart** — income vs. expense time series (`fl_chart`), expense by account
+- **Settings** — salary periods, categories, accounts, backup, PIN reset
 - **Unlock** — retro-terminal PIN lock, 6-attempt lockout, Forgot PIN
 
 <sub>Balances on the dashboard are hidden behind the app's built-in privacy toggle.</sub>
@@ -62,13 +60,15 @@ From left to right:
 
 | Area | Capabilities |
 |---|---|
-| **Dashboard** | Income / expense / balance summary, recent transactions, spending breakdown by category |
+| **Dashboard** | Income / expense / balance summary, current balance of every account, recent transactions, spending breakdown by category |
 | **Transactions** | Create, edit, delete, search by description or category, and filter by date range, type, category, or salary period |
-| **Categories** | Manage income and expense categories — 18 defaults seeded on first launch |
+| **Accounts** | Bank accounts, e-wallets, and cash, each with an opening balance and a color. Drag to reorder; an account that still has transactions is archived instead of deleted. Each account has its own page with its balance, full history, and *Adjust balance*, which records the difference to the real balance as an adjustment |
+| **Transfers** | Move money between your own accounts (two or more needed), with an optional admin fee recorded as an expense under *Admin Fee*. Transfers and adjustments are left out of income, expense, the chart, and the category breakdown |
+| **Categories** | Manage income and expense categories — 19 defaults seeded on first launch, including *Admin Fee* |
 | **Salary Periods** | Group transactions by pay period instead of calendar month |
-| **Chart** | Income vs. expense time series — daily for week/month ranges, monthly for a full year (`fl_chart`) |
+| **Chart** | Income vs. expense time series — daily for week/month ranges, monthly for a full year (`fl_chart`) — plus expense by account for the selected range |
 | **Offline-first** | No network required; every summary and chart is a local Drift query |
-| **Backup & Restore** | Optional Google Sheets sync — manual *Backup Now* / *Restore*, plus debounced auto-backup. A spreadsheet that already holds data prompts before anything is overwritten |
+| **Backup & Restore** | Optional Google Sheets backup — manual *Backup Now* / *Restore*, plus debounced auto-backup. A spreadsheet that already holds data prompts before anything is overwritten |
 | **Security** | Local app lock via PIN — per-PIN random salt + SHA-256 in `flutter_secure_storage`, plus a destructive forgot-PIN recovery |
 
 ---
@@ -132,7 +132,7 @@ Not every feature needs all four layers. What each one actually carries:
 
 | Feature | `data` | `domain` | `application` | `presentation` |
 |---|:---:|:---:|:---:|:---:|
-| `transactions`, `categories`, `salary_period`, `chart`, `dashboard`, `auth` | ✓ | ✓ | ✓ | ✓ |
+| `transactions`, `categories`, `salary_period`, `chart`, `dashboard`, `auth`, `accounts` | ✓ | ✓ | ✓ | ✓ |
 | `backup` | ✓ | — | ✓ | ✓ |
 | `settings` | — | — | — | ✓ |
 
@@ -140,8 +140,8 @@ Deliberate exceptions, so they are not mistaken for drift:
 
 - **`backup` has no `domain/`.** [`backup_serialization.dart`](lib/features/backup/data/backup_serialization.dart) serialises Drift row classes directly, since a backup is a snapshot of the database rather than a business entity. For the same reason it sits at the root of `data/` instead of under `datasources/`.
 - **`backup/application/auto_backup_coordinator.dart`** sits at the root of `application/` rather than in `services/`. It is a scheduler (debounce timer + dirty flag), not a business service.
-- **`settings` is presentation-only.** [`settings_screen.dart`](lib/features/settings/presentation/screens/settings_screen.dart) is a composition surface — it renders widgets and controllers owned by `auth`, `backup`, `categories`, and `salary_period`, and holds no state of its own.
-- **`auth` keeps widgets at `presentation/widgets/`** rather than nested under `screens/`, because `PinScaffold`, `PinDots`, and `PixelPinPad` are shared between the Set PIN and Unlock screens. Every other feature nests widgets under the screens that use them.
+- **`settings` is presentation-only.** [`settings_screen.dart`](lib/features/settings/presentation/screens/settings_screen.dart) is a composition surface — it renders widgets and controllers owned by `accounts`, `auth`, `backup`, `categories`, and `salary_period`, and holds no state of its own.
+- **`auth` keeps widgets at `presentation/widgets/`** rather than nested under `screens/`, because `PinScaffold`, `PinPrompt`, and `PixelPinPad` are shared between the Set PIN and Unlock screens. Every other feature nests widgets under the screens that use them.
 
 The rules above are also documented for contributors in [CLAUDE.md](CLAUDE.md).
 
@@ -160,6 +160,7 @@ lib/
 │   ├── utils/       currency & thousands-separator formatters
 │   └── widgets/     shared pixel components (PixelCard, PixelButton, PixelChip, …)
 ├── features/
+│   ├── accounts/        account balances, transfers, adjust balance, account page
 │   ├── auth/            PIN lock + Google sign-in (for backup)
 │   ├── backup/          Google Sheets backup/restore + auto-backup
 │   ├── categories/
@@ -171,7 +172,9 @@ lib/
 └── main.dart
 ```
 
-The Drift schema (`schemaVersion` 1) holds three tables: `Categories`, `SalaryPeriods`, and `Transactions`.
+The Drift schema (`schemaVersion` 3) holds four tables: `Categories`, `SalaryPeriods`, `Transactions`, and `Accounts`. Version 2 added `Accounts` and the account, transfer-destination, and linked-fee columns on `Transactions`; version 3 added the accounts' sort order. Older databases are upgraded automatically on first launch ([app_database.dart](lib/core/database/app_database.dart)).
+
+A transaction is one of four types: `income`, `expense`, `transfer` (source and destination account), or `adjustment` (a signed amount from *Adjust balance*). Summaries, the chart, and the category breakdown count only `income` and `expense`. A transfer's admin fee is a separate `expense` row linked to its transfer, created, updated, and deleted together with it.
 
 ---
 
@@ -191,7 +194,7 @@ dart run build_runner build --delete-conflicting-outputs   # generate Drift code
 flutter run
 ```
 
-No backend is required. On first launch the app creates the local database and seeds 18 default categories. Backup is optional and needs [its own setup](#google-cloud-setup) — every other feature works without it.
+No backend is required. On first launch the app creates the local database and seeds 19 default categories. Backup is optional and needs [its own setup](#google-cloud-setup) — every other feature works without it.
 
 ### Regenerating icon and splash
 
@@ -206,9 +209,9 @@ dart run flutter_native_splash:create
 
 ## Data & Backup
 
-- **Source of truth** — the on-device Drift database. Fully usable offline, no account needed.
-- **First run** — launch, set a PIN, start recording. Categories are pre-seeded.
-- **Backup** — *Settings → Connect Google Sheets*, then **Backup Now**. Enable **Auto-backup** to sync after changes; it is debounced and best-effort, and never blocks a save.
+- **Source of truth** — the on-device Drift database. Fully usable offline, no sign-up needed.
+- **First run** — launch, set a PIN, start recording. Categories are pre-seeded. Adding accounts in *Settings → Accounts* is optional; once one exists, every new income or expense is recorded against an account.
+- **Backup** — *Settings → Connect Google Sheets*, then **Backup Now**. The spreadsheet gets one tab per table (`Transactions`, `Categories`, `SalaryPeriods`, `Accounts`) plus `Metadata`. Enable **Auto-backup** to back up after changes; it is debounced and best-effort, and never blocks a save.
 - **Restore** — install on the new device and connect the same Google account. If the spreadsheet already holds data, the app asks whether to **Restore** it or **Keep Local**, and *holds auto-backup* until you answer — otherwise a debounced auto-backup could overwrite the spreadsheet with the empty local database before you ever reached Settings. Restoring replaces local data with the spreadsheet contents. Dismissing the prompt keeps the hold in place and leaves a banner in Settings.
 
 > **Backup is a copy, not real-time sync.** Offline changes are lost on a device switch only if they were never backed up. The Settings screen surfaces the last backup time so you can tell.
@@ -243,7 +246,7 @@ Google login is **not** required to use the app — the PIN is the app lock. It 
 
 ### Forgot PIN
 
-With no backend and no server-side identity, there is no way to prove ownership of a device without weakening the lock itself. The only recovery that does not is a full local wipe, so that is what [`ForgotPinScreen`](lib/features/auth/presentation/screens/forgot_pin_screen.dart) does: it erases every transaction, category, and salary period, reseeds the 18 defaults, clears the PIN, and disconnects Google Sheets backup (best-effort) so auto-backup cannot push the emptied database to the cloud.
+With no backend and no server-side identity, there is no way to prove ownership of a device without weakening the lock itself. The only recovery that does not is a full local wipe, so that is what [`ForgotPinScreen`](lib/features/auth/presentation/screens/forgot_pin_screen.dart) does: it erases every transaction, account, category, and salary period, reseeds the 19 defaults, clears the PIN, and disconnects Google Sheets backup (best-effort) so auto-backup cannot push the emptied database to the cloud.
 
 The entry point is deliberately awkward — a *Forgot PIN?* link that appears only during the 30-second lockout after six wrong attempts, leading to a full screen that requires typing `DELETE`. Recovering the data afterwards means a manual **Restore** from a backup taken *before* the wipe; there is no other path.
 
@@ -269,14 +272,15 @@ flutter test --coverage   # writes coverage/lcov.info
 flutter analyze           # lint
 ```
 
-28 test files run entirely against an in-memory Drift database and mocked `SharedPreferences`, so no device, network, or Google account is needed:
+51 test files run entirely against an in-memory Drift database and mocked `SharedPreferences`, so no device, network, or Google account is needed:
 
 | Scope | Covered |
 |---|---|
-| DAOs | Transactions, categories, salary periods, chart, summary, plus range-filter behaviour |
-| Services | PIN hashing and verification, forgot-PIN reset orchestration, dashboard aggregation, auth controller |
-| Backup | Serialization, restore, full-database replace, auto-backup coordinator, metadata store, the restore-decision guard, and the Settings backup card |
-| Core | Database setup, full wipe, cache store, `Failure` mapping, `PixelErrorView` widget, router gating |
+| DAOs | Transactions, categories, salary periods, accounts, chart, summary, plus range-filter behaviour |
+| Services & controllers | PIN hashing and verification, forgot-PIN reset orchestration, account balances and history, account brand colors, dashboard aggregation, chart and transaction services, daily totals, auth and PIN controllers, refreshing every tab after a transaction changes |
+| Backup | Serialization, restore, full-database replace, disconnect, auto-backup coordinator, metadata store, the restore-decision guard, and the Settings backup card |
+| Widgets | Transaction form and list rows, the Home accounts card, the account form and *Adjust balance* sheets, PIN screens, and the shared pixel components (bottom nav, bottom sheet, button, color picker, `PixelErrorView`) |
+| Core | Database setup, schema migrations, full wipe, cache store, `Failure` mapping, router gating, the add button's initial date |
 
 ---
 
